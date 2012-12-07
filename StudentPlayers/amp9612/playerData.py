@@ -94,15 +94,17 @@ class PlayerData(object):
             a list of (r,c) tuples representing the path.
         """
         closed = set()
-        open = {start}
+        open_set = {start}
+        open_sorted = [start]
         came_from = {start : None}
         g_score = {start : 0}
-        def estScore(loc):
+        def evalScore(loc):
             return g_score[loc] + abs(dest[0]-loc[0]) + abs(dest[1]-loc[1])
 
-        while len(open) != 0:
-            current = min(open, key=estScore) # TODO: optimize this into O(1)
-            open.remove(current)
+        while len(open_set) != 0:
+            #current = min(open_set, key=evalScore) # TODO: optimize this into O(1)
+            current = open_sorted.pop()
+            open_set.remove(current)
             if current == dest:
                 # At goal, reconstruct path
                 l = []
@@ -115,10 +117,13 @@ class PlayerData(object):
             for i in self.getAdjacent(current):
                 if i in closed: continue
                 i_gscore = g_score[current] + 1
-                if i not in open or g_score[i] > i_gscore:
+                if i not in open_set or g_score[i] > i_gscore:
                     came_from[i] = current
                     g_score[i] = i_gscore
-                    open.add(i)
+                    if i not in open_set:
+                        open_set.add(i)
+                        open_sorted.append(i)
+                    open_sorted.sort(key=evalScore, reverse=True)
         # Explored all reachable nodes, path doesn't exist.
         return []
 
