@@ -79,8 +79,6 @@ class PlayerData(object):
         else:
             raise ValueError("Invalid wall: %d,%d to %d,%d" % (start[0], start[1], end[0], end[1]))
 
-        self.log("Added wall from %d,%d to %d,%d. New representation:\n%s" % (start[0],start[1],end[0],end[1],str(self)))
-
     def log(self, msg):
         """
         log:
