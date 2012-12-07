@@ -1,0 +1,3 @@
+Logs/*
+*.sublime-workspace
+__pycache__/
