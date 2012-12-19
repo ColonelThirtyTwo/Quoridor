@@ -8,18 +8,22 @@ Author: Alex Parrill (amp9612@rit.edu)
 
 from Model.interface import BOARD_DIM
 
-# Enumerations for representing directions
-DIR_UP = 0x1
-DIR_RIGHT = 0x2
-DIR_DOWN = 0x4
-DIR_LEFT = 0x8
-DIR_LIST = (DIR_DOWN, DIR_RIGHT, DIR_UP, DIR_LEFT)
-DIR_2_ADJ = {DIR_LEFT : (0,-1), DIR_RIGHT : (0,1), DIR_UP : (-1,0), DIR_DOWN : (1,0)}
+class Directions:
+    """
+    Bitwise enumerations for representing directions
+    """
+    UP = 0x1
+    RIGHT = 0x2
+    DOWN = 0x4
+    LEFT = 0x8
+    
+    LIST = (DOWN, RIGHT, UP, LEFT)
+    TO_ADJ = {LEFT : (0,-1), RIGHT : (0,1), UP : (-1,0), DOWN : (1,0)}
 
-class PlayerData(object):
+class PlayerData:
     """A sample class for your player data"""
     
-    def __init__(self, logger, playerId, playerLocations):
+    def __init__(self, logger, playerId, numWalls, playerLocations):
         """
         __init__: 
         Constructs and returns an instance of PlayerData.
@@ -31,11 +35,11 @@ class PlayerData(object):
         
         self.logger = logger
         self.playerId = playerId
+        self.numWalls = numWalls
         self.playerLocations = playerLocations
-        self.numPlayers = len(playerLocations)
         
         self.board = bytearray(BOARD_DIM*BOARD_DIM)
-        self.debug = False
+        self.walls = []
 
     def getAdjacent(self, loc):
         """
@@ -44,19 +48,19 @@ class PlayerData(object):
             loc - locationm tuple
         """
         adj = []
-        for d in DIR_LIST:
+        for d in Directions.LIST:
             newloc = self.getMoveTo(loc, d)
             if newloc: adj.append(newloc)
         return adj
 
     def getMoveTo(self, loc, d):
         """
-        getMoveTo: (r,c), DIR_ENUM -> (r,c)
-        Returns the location adjacent to the specified location in the direction of the passed DIR_ENUM, or
+        getMoveTo: (r,c), Direction -> (r,c)
+        Returns the location adjacent to the specified location in the direction of the passed Direction, or
         None if it is not possible to move in that direction
         """
         if self[loc] & d != 0: return None # Blocked
-        r,c = loc[0]+DIR_2_ADJ[d][0], loc[1]+DIR_2_ADJ[d][1]
+        r,c = loc[0]+Directions.TO_ADJ[d][0], loc[1]+Directions.TO_ADJ[d][1]
         if r < 0 or r >= BOARD_DIM or c < 0 or c >= BOARD_DIM:
             return None # Out of bounds
         return (r,c)
@@ -69,15 +73,23 @@ class PlayerData(object):
         if start[0] == end[0]:
             # Horizontal wall
             for i in range(start[1], end[1]):
-                self[start[0]  ,i] |= DIR_UP
-                self[start[0]-1,i] |= DIR_DOWN
+                self[start[0]  ,i] |= Directions.UP
+                self[start[0]-1,i] |= Directions.DOWN
         elif start[1] == end[1]:
             # Vertical wall
             for i in range(start[0], end[0]):
-                self[i,start[1]  ] |= DIR_LEFT
-                self[i,start[1]-1] |= DIR_RIGHT
+                self[i,start[1]  ] |= Directions.LEFT
+                self[i,start[1]-1] |= Directions.RIGHT
         else:
             raise ValueError("Invalid wall: %d,%d to %d,%d" % (start[0], start[1], end[0], end[1]))
+
+    def wallIsValid(c1, c2):
+        if c1[0] != c2[0] and c1[1] != c2[1]:
+            # Not axis aligned
+            return False
+        if abs(c2[0]-c1[0]) + abs(c2[1]-c1[1]) != 2:
+            # Not length 2
+            return False
 
     def log(self, msg):
         """
@@ -161,7 +173,7 @@ class PlayerData(object):
         result = "PlayerData= " \
                     + "playerId: " + str(self.playerId) \
                     + ", playerLocations: " + str(self.playerLocations) \
-                    + ", numPlayers:" + str(self.numPlayers) + ", board:\n" \
+                    + ", numPlayers:" + str(len(self.playerLocations)) + ", board:\n" \
                     + b
                 
         return result

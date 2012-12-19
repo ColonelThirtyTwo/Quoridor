@@ -7,7 +7,7 @@ Date: July, 2012
 
 # Imports the player move class as well as the board size constant
 from Model.interface import PlayerMove, BOARD_DIM
-from .playerData import PlayerData, DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT
+from .playerData import PlayerData
 
 
 def init(logger, playerId, numWalls, playerHomes):
@@ -173,4 +173,3 @@ def player_invalidated(playerData, playerId):
     # want to change your strategy when a player is kicked out.
     
     return playerData
-
