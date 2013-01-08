@@ -27,10 +27,19 @@ class Wall:
     """
     def __init__(self, ownerid, r1, c1, r2, c2):
         self.owner = ownerid
-        self.r1 = r1
-        self.c1 = c1
-        self.r2 = r2
-        self.c2 = c2
+        self._r1 = r1
+        self._c1 = c1
+        self._r2 = r2
+        self._c2 = c2
+
+    @property
+    def r1(self): return self._r1
+    @property
+    def c1(self): return self._c1
+    @property
+    def r2(self): return self._r2
+    @property
+    def c2(self): return self._c2
 
     def loc1(self):
         """
