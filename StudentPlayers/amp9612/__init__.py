@@ -7,7 +7,7 @@ Date: July, 2012
 
 # Imports the player move class as well as the board size constant
 from Model.interface import PlayerMove, BOARD_DIM
-from .playerData import PlayerData
+from .playerData import PlayerData, Wall
 
 
 def init(logger, playerId, numWalls, playerHomes):
@@ -38,7 +38,7 @@ def init(logger, playerId, numWalls, playerHomes):
             a PlayerData object containing all of this player module's data
     """
 
-    playerData = PlayerData(logger, playerId, list(playerHomes))
+    playerData = PlayerData(logger, playerId-1, numWalls, list(playerHomes))
     
     return playerData
 
@@ -65,9 +65,11 @@ def last_move(playerData, move):
         returns:
             this player module's updated (playerData) data structure
     """
-    if move.move == False:
-        playerData.addWall(move.start, move.end)
-    
+    if move.move:
+        playerData.updatePlayerLocation(move.playerId, (move.r2, move.c2))
+    else:
+        playerData.addWall(Wall(move.playerId, move.r1, move.c1, move.r2, move.c2))
+
     return playerData
 
 def get_neighbors(playerData, r, c):
@@ -132,22 +134,8 @@ def move(playerData):
         returns:
             the move chosen, in the form of an instance of PlayerMove
     """
-    
-    # This function is called when it's your turn to move
-        
-    # Here you'll figure out what kind of move to make and then return that
-    # move. We recommend that you don't update your data structures here,
-    # but rather in last_move. If you do it here, you'll need a special case
-    # check in last_move to make sure you don't update your data structures
-    # twice.
-        
-    # In part 3, any legal move is acceptable. In part 4, you will want to
-    # implement a strategy
-    
-    # Placeholder, fill in these values yourself
-    move = PlayerMove(-1, False, -1, -1, -1, -1)
-    
-    return move
+
+    return playerData.getMove()
 
 def player_invalidated(playerData, playerId):
     """
