@@ -33,27 +33,45 @@ class Wall:
         self.c2 = c2
 
     def loc1(self):
+        """
+        Returns the tuple (r1, c1)
+        """
         return (self.r1, self.c1)
     
     def loc2(self):
+        """
+        Returns the tuple (r2, c2)
+        """
         return (self.r2, self.c2)
     
     def isHoriz(self):
+        """
+        Returns true if wall is horizontal
+        """
         return self.c1 == self.c1
     
     def isVert(self):
+        """
+        Returns true if wall is vertical
+        """
         return self.r1 == self.r2
     
     def isValid(self):
-        # 1. Is axis aligned
-        # 2. Is in correct order
-        # 3. Has length 2
-        # 4. Is inside board
+        """
+        Checks if the wall is valid, that is:
+        1. Wall is axis aligned
+        2. Wall coordinates are in the correct order
+        3. Wall has a length of 2
+        4. Wall is inside the board
+        """
         return (self.r1 == self.r2 or self.c1 == self.c2) and \
             (self.r2 >= self.r1 and self.c2 >= self.c1) and \
             (self.r2-self.r1 + self.c2-self.c1 == 2) and \
             self.isInBoard()
     def isInBoard(self):
+        """
+        Helper function to isValid. Checks to see if the wall is inside the board.
+        """
         if self.r1 < 0 or self.r1 > BOARD_DIM or self.c1 < 0 or self.c1 > BOARD_DIM or \
             self.r2 < 0 or self.r2 > BOARD_DIM or self.c2 < 0 or self.c2 > BOARD_DIM:
             # There is a coordinate outside the board
@@ -72,6 +90,9 @@ class Wall:
         return bordercoords <= 1
     
     def intersects(self, other):
+        """
+        Checks if self instersects with wall other
+        """
         mp1 = ((self.r1+self.r2)/2, (self.c1+self.c2)/2)
         mp2 = ((other.r1+other.r2)/2, (other.c1+other.c2)/2)
         if mp1 == mp2:
@@ -83,6 +104,9 @@ class Wall:
         return False
 
     def toMove(self):
+        """
+        Converts the wall to a PlayerMove object
+        """
         return PlayerMove(self.owner, False, self.r1, self.c1, self.r2, self.c2)
 
     def __str__(self):
@@ -95,7 +119,6 @@ class Wall:
 
 def randomWall(plyid):
     """
-    randomWall: int -> Wall
     Generates a random wall, owned by plyid.
     May not be valid.
     """
@@ -137,16 +160,14 @@ class PlayerData:
 
     def log(self, msg):
         """
-        log:
         Equivalent to self.logger.write
         """
         self.logger.write(msg)
 
     def getAdjacent(self, loc):
         """
-        getAdjacent: (r,c) -> (r,c)
         Returns a list of all adjacent spaces that can be accessed from this space.
-            loc - locationm tuple
+            loc: (r,c) location
         """
         adj = []
         for d in Directions.LIST:
@@ -174,7 +195,6 @@ class PlayerData:
 
     def copy(self):
         """
-        copy: -> PlayerData
         Creates a clone of the player data.
         """
         new = PlayerData.__new__(PlayerData) # Create a new player object without calling __init__
@@ -303,6 +323,9 @@ class PlayerData:
         _astar: (r,c), int function(loc), bool function(loc) -> list
         Generic A* Algorithm.
             start: Starting point
+            heuristic: function that takes a location and returns its heuristic score
+            atgoal: function that takes a location and returns true if that location is a destination
+        Returns a list of (r,c) tuples representing the path, or None if no path exists
         """
         closed = set()
         open_set = {start}
