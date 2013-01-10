@@ -93,7 +93,7 @@ class BinaryHeapMap:
 		return rkey, rval
 	
 	def _find(self, key, i=0):
-		if i > len(self):
+		if i >= len(self):
 			# Out of bounds
 			return None
 		elif self._heap[i] == key:

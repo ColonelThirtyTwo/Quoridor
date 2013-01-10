@@ -7,6 +7,7 @@ Author: Alex Parrill (amp9612@rit.edu)
 """
 
 from Model.interface import BOARD_DIM, PlayerMove
+from .binheap import BinaryHeapMap
 import random
 
 class Directions:
@@ -336,17 +337,18 @@ class PlayerData:
             atgoal: function that takes a location and returns true if that location is a destination
         Returns a list of (r,c) tuples representing the path, or None if no path exists
         """
-        closed = set()
-        open_set = {start}
-        open_sorted = [start]
+        nclosed = set()
+        #open_set = {start}
+        #open_sorted = [start]
+        nopen = BinaryHeapMap()
+        nopen.add(start, 0)
         came_from = {start : None}
         g_score = {start : 0}
         def evalScore(loc):
             return g_score[loc] + heuristic(loc)
         
-        while len(open_set) != 0:
-            current = open_sorted.pop()
-            open_set.remove(current)
+        while nopen:
+            current, _ = nopen.pop()
             if atgoal(current):
                 l = []
                 while current != None:
@@ -354,17 +356,19 @@ class PlayerData:
                     current = came_from[current]
                 l.reverse()
                 return l
-            closed.add(current)
+            nclosed.add(current)
             for i in self.getAdjacent(current):
-                if i in closed: continue
+                if i in nclosed:
+                    continue
                 i_gscore = g_score[current] + 1
-                if i not in open_set or g_score[i] > i_gscore:
+                isopen = i in nopen
+                if not isopen or g_score[i] > i_gscore:
                     came_from[i] = current
                     g_score[i] = i_gscore
-                    if i not in open_set:
-                        open_set.add(i)
-                        open_sorted.append(i)
-                    open_sorted.sort(key=evalScore, reverse=True)
+                    if not isopen:
+                        nopen.add(i, g_score[i]+heuristic(i))
+                    else:
+                        nopen.update(i, g_score[i]+heuristic(i))
         # Explored all reachable nodes, path doesn't exist.
         return None
         
