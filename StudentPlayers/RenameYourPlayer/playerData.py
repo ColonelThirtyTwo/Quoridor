@@ -20,8 +20,8 @@ class PlayerData(object):
         Constructs and returns an instance of PlayerData.
             self - new instance
             logger - the engine logger
-            playerId - my player ID (0-3)
-            playerLocations - list of player coordinates
+            playerId - my player ID (1-4)
+            playerLocations - list of player start coordinates
         """
         
         self.logger = logger

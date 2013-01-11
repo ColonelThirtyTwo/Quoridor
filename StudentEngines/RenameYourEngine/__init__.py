@@ -114,10 +114,11 @@ def get_shortest_path(engineData, r1, c1, r2, c2):
             c2: column coordinate of destination position
         
         returns:
-            a list of coordinates that form the shortest path from the starting
-            position to the destination, inclusive. The format is an ordered
-            list of coordinate pairs (a list of lists, e.g.,
-            [[0,0], [0,1], [1,1]], not a list of tuples).
+            a sequence of coordinate tuples that form the shortest path
+            from the starting position to the destination, inclusive.
+            The format is a tuple or list of coordinate pairs (row,column)
+            ordered from starting position to destination position.
+            An example would be [(0,0), (0,1), (1,1)].
             If there is no path, an empty list, [], should be returned.
     """
     
@@ -203,13 +204,13 @@ def next_move(engineData):
         Parameters
             engineData: the data originally built by this module in init()
                         (used to establish the context of the move)
-            playerNum: the number of the player (in [0 .. n-1] for n players)
 
         returns: the engine data, modified by the actions described above
     """
     
     # Step 1
-    # Get playerMove object from the current player using player module's move
+    # Look at your engine data to determine whose move it is, then
+    # get playerMove object from the current player using player module's move
     # function.
     # (At this point you do not need to record any player's playerData.)
     
@@ -226,12 +227,12 @@ def next_move(engineData):
     #         init function was called.
     #
     #     Notify all players of this move by doing the following
-    #         for each player:
+    #         for each player id:
+    #             Obtain a player's data by calling model.getPlayerData(id)
     #             Call player.last_move(playerData, playerMove).
     #             Save the player's returned playerData using
     #                                           model.setPlayerData
     #
-    #     [ !!! Obtain playerData using model.getPlayerData ??? ]
     
     # Safety tip: rather than passing the playerMove object, pass a copy of it
     # by calling playerMove.getCopy() to ensure that there is no harm done if

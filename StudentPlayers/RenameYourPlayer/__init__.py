@@ -5,10 +5,38 @@ Author: Adam Oest
 Date: July, 2012
 """
 
+# If you get this error, either run quoridor.py or create
+# a new file in the same directory as quoridor.py,
+# in which you import your module and call your own functions
+# for testing purposes
+if __name__ == "__main__":
+    import sys
+    sys.stderr.write("You cannot run this file on its own.")
+    sys.exit()
+
 # Imports the player move class as well as the board size constant
 from Model.interface import PlayerMove, BOARD_DIM
 from .playerData import PlayerData
 
+"""
+    Started file overview:
+        For part 1, you will implement the following functions
+            init
+            last_move
+            get_neighbors
+            get_shortest_path
+            
+        You will also need to define a BFS function elsewhere (i.e. in
+        playerData or in another function) and update playerData to 
+        hold whatever state you need
+        
+        For part 2, you will implement the following functions
+            move
+            
+        You will also need to update your data structures and possibly
+        other functions to support playing 1-player games
+
+"""
 
 def init(logger, playerId, numWalls, playerHomes):
     """
@@ -120,10 +148,11 @@ def get_shortest_path(playerData, r1, c1, r2, c2):
             c2: column coordinate of destination position
         
         returns:
-            a list of coordinates that form the shortest path from the starting
-            position to the destination, inclusive. The format is an ordered
-            list of coordinate pairs (a list of lists, e.g.,
-            [[0,0], [0,1], [1,1]], not a list of tuples).
+            a sequence of coordinate tuples that form the shortest path
+            from the starting position to the destination, inclusive.
+            The format is a tuple or list of coordinate pairs (row,column)
+            ordered from starting position to destination position.
+            An example would be [(0,0), (0,1), (1,1)].
             If there is no path, an empty list, [], should be returned.
     """
     
