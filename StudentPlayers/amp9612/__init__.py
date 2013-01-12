@@ -9,7 +9,6 @@ Date: July, 2012
 from Model.interface import PlayerMove, BOARD_DIM
 from .playerData import PlayerData, Wall
 
-
 def init(logger, playerId, numWalls, playerHomes):
     """
         Part 1 - 4
@@ -37,9 +36,8 @@ def init(logger, playerId, numWalls, playerHomes):
         returns:
             a PlayerData object containing all of this player module's data
     """
-
-    playerData = PlayerData(logger, playerId-1, numWalls, list(playerHomes))
     
+    playerData = PlayerData(playerId-1, numWalls, list(playerHomes))
     return playerData
 
 def last_move(playerData, move):

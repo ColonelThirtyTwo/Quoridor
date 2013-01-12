@@ -43,16 +43,12 @@ class PlayerData:
     A representation of the quoridor board.
     """
     
-    def __init__(self, logger, playerId, numWalls, playerLocations):
+    def __init__(self, playerId, numWalls, playerLocations):
         """
-        Constructs and returns an instance of PlayerData.
-            logger: the engine logger
-            playerId: my player ID (0-3)
-            numWalls: Number of walls we have
-            playerLocations: list of player coordinates
+        playerId: my player ID (0-3)
+        numWalls: Number of walls we have
+        playerLocations: list of player coordinates
         """
-        
-        self.logger = logger
         self.playerId = playerId
         self.numWalls = numWalls
         self.playerLocations = playerLocations
@@ -63,12 +59,6 @@ class PlayerData:
 
     ############################################################################################
     # Helper functions
-
-    def log(self, msg):
-        """
-        Equivalent to self.logger.write
-        """
-        self.logger.write(msg)
 
     def getAdjacent(self, loc):
         """
@@ -106,7 +96,6 @@ class PlayerData:
         new = PlayerData.__new__(PlayerData) # Create a new player object without calling __init__
 
         # Copy over attributes
-        new.logger = self.logger
         new.playerId = self.playerId
         new.numWalls = self.numWalls
         new.playerLocations = self.playerLocations.copy()
