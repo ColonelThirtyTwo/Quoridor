@@ -1,3 +1,5 @@
 Logs/*
 *.sublime-workspace
 __pycache__/
+config.txt
+*.sublime-*
