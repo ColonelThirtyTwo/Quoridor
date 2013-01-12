@@ -32,6 +32,32 @@ class Directions:
     LIST = (DOWN, RIGHT, UP, LEFT)
     TO_ADJ = {LEFT : (0,-1), RIGHT : (0,1), UP : (-1,0), DOWN : (1,0)}
 
+class TempWallView:
+    """
+    A view object for temporairly setting a wall in a board without modifying the underlying
+    board bytearr or creating a clone of it. Used during wall validity checking to be able
+    to pathfind with the wall without actually adding it.
+    """
+    def __init__(self, board, wall):
+        self.board = board
+        self.wall = wall
+    
+    def __getitem__(self, i):
+        r = i // BOARD_DIM
+        c = i % BOARD_DIM
+        w = self.wall
+        if w.isHoriz() and c >= w.c1 and c < w.c2:
+            if r == w.r1:
+                return self.board[i] | Directions.UP
+            elif r == w.r1 - 1:
+                return self.board[i] | Directions.DOWN
+        elif w.isVert() and r >= w.r1 and r < w.r2:
+            if c == w.c1:
+                return self.board[i] | Directions.LEFT
+            elif c == w.c1 - 1:
+                return self.board[i] | Directions.RIGHT
+        return self.board[i]
+
 def randomWall(plyid):
     """
     Generates a random wall, owned by plyid.
@@ -179,6 +205,19 @@ class PlayerData:
         for i in self.walls:
             if wall.intersects(i):
                 return False
+        
+        # Temporairly 'add' the wall and make sure players can still get to their goals
+        board = self.board
+        try:
+            self.board = TempWallView(board, wall)
+            canBypass = True
+            for i, loc in enumerate(self.playerLocations):
+                if loc and self.findPathToGoal(loc, i) == None:
+                    print("Blocked:", wall)
+                    return False
+        finally:
+            # Make sure we put it back
+            self.board = board
 
         if wall.isHoriz():
             # Horizontal wall
@@ -208,16 +247,7 @@ class PlayerData:
             while True:
                 w = randomWall(testpd.playerId + 1)
                 if testpd.addWall(w):
-                    # Check if players can still get to the goals
-                    canBypass = True
-                    for i, loc in enumerate(self.playerLocations):
-                        if loc and testpd.findPathToGoal(loc, i) == None:
-                            canBypass = False
-                            break
-                    if canBypass:
-                        break
-                    else:
-                        testpd = self.copy()
+                    break
                             
             return w.toMove()
         else:
