@@ -5,7 +5,6 @@ Author: Adam Oest
 Date: July, 2012
 """
 
-# Imports the player move class as well as the board size constant
 from Model.interface import PlayerMove, BOARD_DIM
 from .playerData import PlayerData, Wall
 
