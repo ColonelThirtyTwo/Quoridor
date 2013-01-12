@@ -100,11 +100,6 @@ class Wall:
                 return True
             elif mp1 == other.loc2():
                 return True
-        #else:
-        #    if mp2 == self.loc1():
-        #        return True
-        #    if mp2 == self.loc2():
-        #        return True
         return False
 
     def toMove(self):

@@ -37,7 +37,7 @@ def init(logger, playerId, numWalls, playerHomes):
             a PlayerData object containing all of this player module's data
     """
     
-    playerData = PlayerData(playerId-1, numWalls, list(playerHomes))
+    playerData = PlayerData(playerId-1, numWalls, playerHomes)
     return playerData
 
 def last_move(playerData, move):
@@ -63,61 +63,8 @@ def last_move(playerData, move):
         returns:
             this player module's updated (playerData) data structure
     """
-    if move.move:
-        playerData.updatePlayerLocation(move.playerId, (move.r2, move.c2))
-    else:
-        wall = Wall(move.playerId, move.r1, move.c1, move.r2, move.c2)
-        if not playerData.addWall(wall):
-            raise RuntimeError("Got invalid wall from engine: "+str(wall))
-
+    playerData.applyMove(move)
     return playerData
-
-def get_neighbors(playerData, r, c):
-    """
-        Part 1
-    
-        This function is used only in part 1 mode. The engine calls it after
-        all PRE_MOVEs have been made. (See the config.cfg file.)
-
-        Parameters
-            playerData: this player's data, originally built by this
-                        module in init()
-            r: row coordinate of starting position for this player's piece
-            c: column coordinate of starting position for this player's piece
-        
-        returns:
-            a list of coordinate pairs (a list of lists, e.g. [[0,0], [0,2]],
-            not a list of tuples) denoting all the reachable neighboring squares
-            from the given coordinate. "Neighboring" means exactly one move
-            away.
-    """
-    
-    return playerData.getAdjacent((r,c))
-
-def get_shortest_path(playerData, r1, c1, r2, c2):
-    """
-        Part 1
-    
-        This function is only called in part 1 mode. The engine calls it when
-        a shortest path is requested by the user via the graphical interface.
-
-        Parameters
-            playerData: this player's data, originally built by this
-                        module in init()
-            r1: row coordinate of starting position
-            c1: column coordinate of starting position
-            r2: row coordinate of destination position
-            c2: column coordinate of destination position
-        
-        returns:
-            a list of coordinates that form the shortest path from the starting
-            position to the destination, inclusive. The format is an ordered
-            list of coordinate pairs (a list of lists, e.g.,
-            [[0,0], [0,1], [1,1]], not a list of tuples).
-            If there is no path, an empty list, [], should be returned.
-    """
-    
-    return playerData.findPath((r1,c1), (r2,c2))
 
 def move(playerData):
     """
@@ -151,12 +98,5 @@ def player_invalidated(playerData, playerId):
         returns:
             this player's updated playerData
     """
-    
-    # Update your player data to reflect the invalidation.
-    # FYI, the player's piece is removed from the board,
-    # but not its walls.
-    
-    # When you are working on part 4, there is a small chance you'd
-    # want to change your strategy when a player is kicked out.
-    
+    playerData.invalidatePlayer(playerId-1)
     return playerData

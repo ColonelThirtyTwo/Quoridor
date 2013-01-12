@@ -1,8 +1,5 @@
 """
-Quoridor II: Student Computer Player
-
-A sample class you may use to hold your state data
-Author: Adam Oest (amo9149@rit.edu)
+Player data to store the AI's state.
 Author: Alex Parrill (amp9612@rit.edu)
 """
 
@@ -73,27 +70,55 @@ def randomWall(plyid):
         end_c = start_c + 2
     return Wall(plyid, start_r, start_c, end_r, end_c)
 
-class PlayerData:
+class Player:
+    """
+    Player object.
+    """
+    def __init__(self, id, location, walls):
+        """
+        id: Base-zero Player id
+        location: Current location of player
+        walls: Number of walls the player has left
+        """
+        self.id = id
+        self.location = location
+        self.walls = walls
+
+class Board:
     """
     A representation of the quoridor board.
     """
     
-    def __init__(self, playerId, numWalls, playerLocations):
+    def __init__(self, board, walls, players, turn):
         """
-        playerId: my player ID (0-3)
-        numWalls: Number of walls we have
-        playerLocations: list of player coordinates
+        board: bytearray representation of the board
+        walls: list of Wall objects
+        players: list of Player objects, in the order of their turns
+        turn: index of players argument of the player whose turn it is
         """
-        self.playerId = playerId
-        self.numWalls = numWalls
-        self.playerLocations = playerLocations
-        
-        self.board = bytearray(BOARD_DIM*BOARD_DIM)
-        self.walls = []
-        self.placewall = False
+        self.board = board
+        self.walls = walls
+        self.players = players
+        self.turn = turn
 
     ############################################################################################
     # Helper functions
+    
+    def getPlayer(self, plyid):
+        """
+        Returns the player object with the given playerid
+        """
+        for i in self.players:
+            if i.id == plyid:
+                return i
+    
+    def removePlayer(self, plyid):
+        """
+        Removes the player from the board.
+        """
+        for i,p in enumerate(self.players):
+            if p.id == plyid:
+                self.players.pop(i)
 
     def getAdjacent(self, loc):
         """
@@ -109,7 +134,7 @@ class PlayerData:
     def getMoveTo(self, loc, d):
         """
         getMoveTo: (r,c), Direction -> (r,c)
-        Returns the location aFjacent to the specified location in the direction of the passed Direction, or
+        Returns the location ajacent to the specified location in the direction of the passed Direction, or
         None if it is not possible to move in that direction
         """
         if self[loc] & d != 0: return None # Blocked
@@ -117,26 +142,45 @@ class PlayerData:
         if r < 0 or r >= BOARD_DIM or c < 0 or c >= BOARD_DIM:
             return None # Out of bounds
         return (r,c)
-
-    def getMyPos(self):
+    
+    def checkWall(self, wall):
         """
-        Returns our position.
+        Checks if a wall is valid. This includes:
+        1. All the checks done by wall.isValid
+        2. It does not intersect with any other walls
+        3. It does not cut off a player's path
         """
-        return self.playerLocations[self.playerId]
+        if not wall.isValid():
+            return False
+        
+        for i in self.walls:
+            if wall.intersects(i):
+                return False
+        
+        # Temporairly 'add' the wall and make sure players can still get to their goals
+        board = self.board
+        try:
+            self.board = TempWallView(board, wall)
+            for ply in self.players:
+                if self.findPathToGoal(ply.location, ply.id) == None:
+                    return False
+        finally:
+            # Make sure we put it back
+            self.board = board
+        
+        return True
 
     def copy(self):
         """
-        Creates a clone of the player data.
+        Creates a shallow copy of the player data.
         """
-        new = PlayerData.__new__(PlayerData) # Create a new player object without calling __init__
+        new = Board.__new__(Board) # Create a new object without calling __init__
 
         # Copy over attributes
-        new.playerId = self.playerId
-        new.numWalls = self.numWalls
-        new.playerLocations = self.playerLocations.copy()
         new.board = self.board.copy()
         new.walls = self.walls.copy()
-        new.placewall = self.placewall
+        new.players = self.players.copy()
+        new.turn = self.turn
 
         return new
 
@@ -159,12 +203,6 @@ class PlayerData:
         self.board[loc[0]*BOARD_DIM+loc[1]] = v
         
     def __str__(self):
-        """
-        __str__: PlayerData -> string
-        Returns a string representation of the PlayerData object.
-            self - the PlayerData object
-        """
-        
         b = "    "
         for i in range(BOARD_DIM):
             b += "{:2}   ".format(i)
@@ -175,12 +213,8 @@ class PlayerData:
                 b += "{:04b} ".format(self[r,c])
             b += "\n"
 
-        result = "PlayerData= " \
-                    + "playerId: " + str(self.playerId) \
-                    + ", playerLocations: " + str(self.playerLocations) \
-                    + ", numPlayers:" + str(len(self.playerLocations)) + ", board:\n" \
-                    + b
-                
+        result = "Board="+b
+        
         return result
 
     ############################################################################################
@@ -191,34 +225,14 @@ class PlayerData:
         updatePlayerLocation: int, (r,c)
         Updates a player's location.
         """
-        self.playerLocations[plyid-1] = loc
+        self.getPlayer(plyid).location = loc
 
     def addWall(self, wall):
         """
         addWall: Wall -> Boolean
         Adds a wall to the internal board representation.
-        Returns true if successful, false if the wall is invalid or collides with other walls.
+        Assumes the wall is valid.
         """
-        if not wall.isValid():
-            return False
-        
-        for i in self.walls:
-            if wall.intersects(i):
-                return False
-        
-        # Temporairly 'add' the wall and make sure players can still get to their goals
-        board = self.board
-        try:
-            self.board = TempWallView(board, wall)
-            canBypass = True
-            for i, loc in enumerate(self.playerLocations):
-                if loc and self.findPathToGoal(loc, i) == None:
-                    print("Blocked:", wall)
-                    return False
-        finally:
-            # Make sure we put it back
-            self.board = board
-
         if wall.isHoriz():
             # Horizontal wall
             for i in range(wall.c1, wall.c2):
@@ -230,38 +244,7 @@ class PlayerData:
                 self[i,wall.c1  ] |= Directions.LEFT
                 self[i,wall.c1-1] |= Directions.RIGHT
         self.walls.append(wall)
-        
-        if wall.owner == self.playerId + 1:
-            self.numWalls -= 1
-        return True
-
-    def getMove(self):
-        """
-        Returns the PlayerMove object representing the move that the player should make
-        """
-        testpd = self.copy()
-
-        if self.placewall and self.numWalls > 0:
-            self.placewall = False
-            # Generate a wall
-            while True:
-                w = randomWall(testpd.playerId + 1)
-                if testpd.addWall(w):
-                    break
-                            
-            return w.toMove()
-        else:
-            self.placewall = True
-            # Move along the shortest path
-            mypos = self.getMyPos()
-            path = self.findPathToGoal(mypos, self.playerId)
-            if not path:
-                raise RuntimeError("No path to goal!")
-            elif len(path) >= 2:
-                return PlayerMove(self.playerId + 1, True, mypos[0], mypos[1], path[1][0], path[1][1])
-            else:
-                return None
-
+        self.getPlayer(wall.owner).walls -= 1
 
     ############################################################################################
     # Pathfinding
@@ -326,3 +309,63 @@ class PlayerData:
         """
         heuristic, atgoal = _goal_settings[goalnum]
         return self._astar(start, heuristic, atgoal)
+
+class PlayerData:
+    """
+    State for the quoridor game
+    """
+    
+    def __init__(self, plyid, numwalls, plylocs):
+        """
+        plyid: Base-zero player id
+        numwalls: Starting number of walls for each player
+        plylocs: Iterable of player locations
+        """
+        plys = []
+        for id, pos in enumerate(plylocs):
+            if pos:
+                p = Player(id, pos, numwalls)
+                plys.append(p)
+        self.myid = plyid
+        self.currentboard = Board(bytearray(BOARD_DIM*BOARD_DIM), [], plys, 0)
+        self.placewall = False
+    
+    def applyMove(self, move):
+        """
+        Updates the internal board representation with a PlayerMove object
+        """
+        if move.move:
+            self.currentboard.updatePlayerLocation(move.playerId-1, (move.r2, move.c2))
+        else:
+            w = Wall(move.playerId-1, move.r1, move.c1, move.r2, move.c2)
+            assert(self.currentboard.checkWall(w))
+            self.currentboard.addWall(w)
+    
+    def getMove(self):
+        """
+        Returns the move the player should make
+        """
+        p = self.currentboard.getPlayer(self.myid)
+        if self.placewall and p.walls > 0:
+            self.placewall = False
+            while True:
+                w = randomWall(self.myid + 1)
+                if self.currentboard.checkWall(w):
+                    break
+            return w.toMove()
+        else:
+            self.placewall = True
+            mypos = p.location
+            path = self.currentboard.findPathToGoal(mypos, self.myid)
+            if not path:
+                raise RuntimeError("No path to goal!")
+            elif len(path) >= 2:
+                return PlayerMove(self.myid + 1, True, mypos[0], mypos[1], path[1][0], path[1][1])
+            else:
+                return None
+    
+    def invalidatePlayer(self, plyid):
+        """
+        Removes the player from the board
+        """
+        self.currentboard.removePlayer(plyid)
