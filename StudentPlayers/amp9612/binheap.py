@@ -104,10 +104,9 @@ class BinaryHeapMap:
 		elif self._heap[i] == key:
 			# Found it
 			return i
-		elif self._get(i) <= self._values[key]:
+		else:
 			# Search more
 			return self._find(key, i*2+1) or self._find(key, i*2+2)
-		return None
 
 	def update(self, key, value):
 		"""

@@ -14,3 +14,4 @@ class Directions:
     
     LIST = (DOWN, RIGHT, UP, LEFT)
     TO_ADJ = {LEFT : (0,-1), RIGHT : (0,1), UP : (-1,0), DOWN : (1,0)}
+    PERPENDICULAR = {LEFT : (UP, DOWN), RIGHT : (UP, DOWN), UP : (LEFT, RIGHT), DOWN : (LEFT, RIGHT)}

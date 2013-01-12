@@ -74,7 +74,7 @@ class Board:
         self.turn = turn
 
     ############################################################################################
-    # Helper functions
+    # Misc functions
     
     def getPlayer(self, plyid):
         """
@@ -99,21 +99,37 @@ class Board:
         """
         adj = []
         for d in Directions.LIST:
-            newloc = self.getMoveTo(loc, d)
-            if newloc: adj.append(newloc)
+            if self[loc] & d != 0:
+                continue
+            newloc = loc[0]+Directions.TO_ADJ[d][0], loc[1]+Directions.TO_ADJ[d][1]
+            if newloc[0] < 0 or newloc[0] >= BOARD_DIM or newloc[1] < 0 or newloc[1] >= BOARD_DIM:
+                continue
+            
+            # Weird moves when a player is blocking
+            ply = None
+            for p in self.players:
+                if p.location == newloc and p.location != loc:
+                    ply = p
+                    break
+            if ply:
+                if self[newloc] & d == 0:
+                    # Can 'jump over' the player
+                    newloc = loc[0]+Directions.TO_ADJ[d][0], loc[1]+Directions.TO_ADJ[d][1]
+                    if newloc[0] < 0 or newloc[0] >= BOARD_DIM or newloc[1] < 0 or newloc[1] >= BOARD_DIM:
+                        continue
+                else:
+                    d1, d2 = Directions.PERPENDICULAR[d]
+                    if self[newloc] & d1 == 0:
+                        newloc2 = loc[0]+Directions.TO_ADJ[d1][0], loc[1]+Directions.TO_ADJ[d1][1]
+                        if newloc2[0] >= 0 and newloc2[0] < BOARD_DIM and newloc2[1] >= 0 and newloc2[1] < BOARD_DIM:
+                            adj.append(newloc2)
+                    if self[newloc] & d2 == 0:
+                        newloc2 = loc[0]+Directions.TO_ADJ[d2][0], loc[1]+Directions.TO_ADJ[d2][1]
+                        if newloc2[0] >= 0 and newloc2[0] < BOARD_DIM and newloc2[1] >= 0 and newloc2[1] < BOARD_DIM:
+                            adj.append(newloc2)
+            else:
+                adj.append(newloc)
         return adj
-
-    def getMoveTo(self, loc, d):
-        """
-        getMoveTo: (r,c), Direction -> (r,c)
-        Returns the location ajacent to the specified location in the direction of the passed Direction, or
-        None if it is not possible to move in that direction
-        """
-        if self[loc] & d != 0: return None # Blocked
-        r,c = loc[0]+Directions.TO_ADJ[d][0], loc[1]+Directions.TO_ADJ[d][1]
-        if r < 0 or r >= BOARD_DIM or c < 0 or c >= BOARD_DIM:
-            return None # Out of bounds
-        return (r,c)
     
     def checkWall(self, wall):
         """
@@ -223,7 +239,6 @@ class Board:
 
     def _astar(self, start, heuristic, atgoal):
         """
-        _astar: (r,c), int function(loc), bool function(loc) -> list
         Generic A* Algorithm.
             start: Starting point
             heuristic: function that takes a location and returns its heuristic score
@@ -263,7 +278,6 @@ class Board:
         
     def findPathToLoc(self, start, dest):
         """
-        findPathToLoc: (r,c), (r,c) -> list
         Finds the shortest valid path from start to dest, inclusive.
         Returns:
             a list of (r,c) tuples representing the path.
@@ -276,7 +290,6 @@ class Board:
     
     def findPathToGoal(self, start, goalnum):
         """
-        findPathToGoal: (r,c) -> list
         Finds the shortest valid path to the goal
         """
         heuristic, atgoal = _goal_settings[goalnum]
