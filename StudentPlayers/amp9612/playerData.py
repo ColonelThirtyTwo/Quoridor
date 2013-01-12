@@ -11,6 +11,15 @@ from .binheap import BinaryHeapMap
 from .wall import Wall
 import random
 
+# Heuristic and isgoal functions for each of the four goal rows
+_goal_settings = [
+    (lambda loc: abs(loc[0]), lambda loc: loc[0] == 0),
+    (lambda loc: BOARD_DIM-1-abs(loc[0]), lambda loc: loc[0] == BOARD_DIM-1),
+    # TODO: Verify that player 3 goes to the right and player 4 goes to the left
+    (lambda loc: BOARD_DIM-1-abs(loc[1]), lambda loc: loc[1] == BOARD_DIM-1),
+    (lambda loc: abs(loc[1]), lambda loc: loc[1] == 0)
+]
+
 class Directions:
     """
     Bitwise enumerations for representing directions
@@ -201,8 +210,8 @@ class PlayerData:
                 if testpd.addWall(w):
                     # Check if players can still get to the goals
                     canBypass = True
-                    for i in self.playerLocations:
-                        if i and testpd.findPathToGoal(i) == None:
+                    for i, loc in enumerate(self.playerLocations):
+                        if loc and testpd.findPathToGoal(loc, i) == None:
                             canBypass = False
                             break
                     if canBypass:
@@ -215,7 +224,7 @@ class PlayerData:
             self.placewall = True
             # Move along the shortest path
             mypos = self.getMyPos()
-            path = self.findPathToGoal(mypos)
+            path = self.findPathToGoal(mypos, self.playerId)
             if not path:
                 raise RuntimeError("No path to goal!")
             elif len(path) >= 2:
@@ -280,14 +289,10 @@ class PlayerData:
             return loc == dest
         return self._astar(start, heuristic, atgoal)
     
-    def findPathToGoal(self, start):
+    def findPathToGoal(self, start, goalnum):
         """
         findPathToGoal: (r,c) -> list
         Finds the shortest valid path to the goal
-        TODO: Support for other goals than the top
         """
-        def heuristic(loc):
-            return abs(loc[0])
-        def atgoal(loc):
-            return loc[0] == 0
+        heuristic, atgoal = _goal_settings[goalnum]
         return self._astar(start, heuristic, atgoal)
