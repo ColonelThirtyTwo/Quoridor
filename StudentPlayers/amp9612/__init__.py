@@ -68,7 +68,9 @@ def last_move(playerData, move):
     if move.move:
         playerData.updatePlayerLocation(move.playerId, (move.r2, move.c2))
     else:
-        playerData.addWall(Wall(move.playerId, move.r1, move.c1, move.r2, move.c2))
+        wall = Wall(move.playerId, move.r1, move.c1, move.r2, move.c2)
+        if not playerData.addWall(wall):
+            raise RuntimeError("Got invalid wall from engine: "+str(wall))
 
     return playerData
 
@@ -134,7 +136,6 @@ def move(playerData):
         returns:
             the move chosen, in the form of an instance of PlayerMove
     """
-
     return playerData.getMove()
 
 def player_invalidated(playerData, playerId):

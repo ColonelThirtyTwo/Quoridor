@@ -58,13 +58,13 @@ class Wall:
         """
         Returns true if wall is horizontal
         """
-        return self.c1 == self.c1
+        return self.r1 == self.r2
     
     def isVert(self):
         """
         Returns true if wall is vertical
         """
-        return self.r1 == self.r2
+        return self.c1 == self.c2
     
     def isValid(self):
         """
@@ -74,14 +74,17 @@ class Wall:
         3. Wall has a length of 2
         4. Wall is inside the board
         """
-        return (self.r1 == self.r2 or self.c1 == self.c2) and \
-            (self.r2 >= self.r1 and self.c2 >= self.c1) and \
-            (self.r2-self.r1 + self.c2-self.c1 == 2) and \
-            self.isInBoard()
-    def isInBoard(self):
-        """
-        Helper function to isValid. Checks to see if the wall is inside the board.
-        """
+        
+        if self.r1 != self.r2 and self.c1 != self.c2:
+            # Not axis aligned
+            return False
+        if self.r2 < self.r1 or self.c2 < self.c1:
+            # Coordinates in wrong order
+            return False
+        if self.r2-self.r1 + self.c2-self.c1 != 2:
+            # Length != 2
+            return False
+            
         if self.r1 < 0 or self.r1 > BOARD_DIM or self.c1 < 0 or self.c1 > BOARD_DIM or \
             self.r2 < 0 or self.r2 > BOARD_DIM or self.c2 < 0 or self.c2 > BOARD_DIM:
             # There is a coordinate outside the board
@@ -107,10 +110,17 @@ class Wall:
         mp2 = ((other.r1+other.r2)/2, (other.c1+other.c2)/2)
         if mp1 == mp2:
             return True
-        if (self.isHoriz() == other.isHoriz()) and ( \
-            mp1 == other.loc1() or mp1 == other.loc2() or \
-            mp2 == self.loc1() or mp2 == self.loc2()):
-            return True
+        
+        if self.isHoriz() == other.isHoriz():
+            if mp1 == other.loc1():
+                return True
+            elif mp1 == other.loc2():
+                return True
+        #else:
+        #    if mp2 == self.loc1():
+        #        return True
+        #    if mp2 == self.loc2():
+        #        return True
         return False
 
     def toMove(self):
@@ -143,17 +153,17 @@ def randomWall(plyid):
     return Wall(plyid, start_r, start_c, end_r, end_c)
 
 class PlayerData:
-    """A sample class for your player data"""
+    """
+    A representation of the quoridor board.
+    """
     
     def __init__(self, logger, playerId, numWalls, playerLocations):
         """
-        __init__: 
         Constructs and returns an instance of PlayerData.
-            self - new instance
-            logger - the engine logger
-            playerId - my player ID (0-3)
+            logger: the engine logger
+            playerId: my player ID (0-3)
             numWalls: Number of walls we have
-            playerLocations - list of player coordinates
+            playerLocations: list of player coordinates
         """
         
         self.logger = logger
@@ -244,9 +254,13 @@ class PlayerData:
         Returns a string representation of the PlayerData object.
             self - the PlayerData object
         """
-
-        b = "LDRU "*BOARD_DIM + "\n"
+        
+        b = "    "
+        for i in range(BOARD_DIM):
+            b += "{:2}   ".format(i)
+        b += "\n    " + "LDRU "*BOARD_DIM + "\n"
         for r in range(BOARD_DIM):
+            b += "{:2}  ".format(r)
             for c in range(BOARD_DIM):
                 b += "{:04b} ".format(self[r,c])
             b += "\n"
@@ -277,6 +291,7 @@ class PlayerData:
         """
         if not wall.isValid():
             return False
+        
         for i in self.walls:
             if wall.intersects(i):
                 return False
@@ -285,7 +300,7 @@ class PlayerData:
             # Horizontal wall
             for i in range(wall.c1, wall.c2):
                 self[wall.r1  ,i] |= Directions.UP
-                self[wall.r2-1,i] |= Directions.DOWN
+                self[wall.r1-1,i] |= Directions.DOWN
         else:
             # Vertical wall
             for i in range(wall.r1, wall.r2):
@@ -308,9 +323,18 @@ class PlayerData:
             # Generate a wall
             while True:
                 w = randomWall(testpd.playerId + 1)
-                self.log("Generated wall: " + str(w))
                 if testpd.addWall(w):
-                    break
+                    # Check if players can still get to the goals
+                    canBypass = True
+                    for i in self.playerLocations:
+                        if i and testpd.findPathToGoal(i) == None:
+                            canBypass = False
+                            break
+                    if canBypass:
+                        break
+                    else:
+                        testpd = self.copy()
+                            
             return w.toMove()
         else:
             self.placewall = True
@@ -338,14 +362,10 @@ class PlayerData:
         Returns a list of (r,c) tuples representing the path, or None if no path exists
         """
         nclosed = set()
-        #open_set = {start}
-        #open_sorted = [start]
         nopen = BinaryHeapMap()
         nopen.add(start, 0)
         came_from = {start : None}
         g_score = {start : 0}
-        def evalScore(loc):
-            return g_score[loc] + heuristic(loc)
         
         while nopen:
             current, _ = nopen.pop()

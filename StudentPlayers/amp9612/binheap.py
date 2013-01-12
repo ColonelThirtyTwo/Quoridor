@@ -1,3 +1,8 @@
+"""
+Binary heap implementation
+
+Author: Alex Parrill (amp9612@rit.edu)
+"""
 
 from math import floor
 
@@ -122,6 +127,9 @@ class BinaryHeapMap:
 			self._upheap(i)
 	
 	def copy(self):
+		"""
+		Creates a shallow copy of the heap.
+		"""
 		c = BinaryHeapMap.__new__(BinaryHeapMap)
 		c._heap = self._heap.copy()
 		c._values = self._values.copy()
