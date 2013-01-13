@@ -213,7 +213,6 @@ class PlayerData:
             canBypass = True
             for i, loc in enumerate(self.playerLocations):
                 if loc and self.findPathToGoal(loc, i) == None:
-                    print("Blocked:", wall)
                     return False
         finally:
             # Make sure we put it back
