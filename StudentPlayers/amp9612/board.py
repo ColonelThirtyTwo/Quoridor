@@ -3,8 +3,9 @@ Board class to store the board's state
 Author: Alex Parrill (amp9612@rit.edu)
 """
 
-from Model.interface import BOARD_DIM
+from Model.interface import PlayerMove, BOARD_DIM
 from .directions import Directions
+from .wall import Wall
 from .binheap import BinaryHeapMap
 
 # Heuristic and isgoal functions for each of the four goal rows
@@ -29,6 +30,16 @@ class Player:
         self.id = id
         self.location = location
         self.walls = walls
+    
+    def copy(self):
+        """
+        Creates a copy of self
+        """
+        return Player(self.id, self.location, self.walls)
+    
+    def __str__(self):
+        return "Player({0},{1},{2})".format(self.id, self.location, self.walls)
+    __repr__ = __str__
 
 class TempWallView:
     """
@@ -61,17 +72,15 @@ class Board:
     A representation of the quoridor board.
     """
     
-    def __init__(self, board, walls, players, turn):
+    def __init__(self, board, walls, players):
         """
         board: bytearray representation of the board
         walls: list of Wall objects
         players: list of Player objects, in the order of their turns
-        turn: index of players argument of the player whose turn it is
         """
         self.board = board
         self.walls = walls
         self.players = players
-        self.turn = turn
 
     ############################################################################################
     # Misc functions
@@ -80,24 +89,19 @@ class Board:
         """
         Returns the player object with the given playerid
         """
-        for i in self.players:
-            if i.id == plyid:
-                return i
+        return self.players[plyid]
     
     def removePlayer(self, plyid):
         """
         Removes the player from the board.
         """
-        for i,p in enumerate(self.players):
-            if p.id == plyid:
-                self.players.pop(i)
+        self.players[plyid] = None
 
     def getAdjacent(self, loc):
         """
-        Returns a list of all adjacent spaces that can be accessed from this space.
+        Returns a generator of all adjacent spaces that can be accessed from this space.
             loc: (r,c) location
         """
-        adj = []
         for d in Directions.LIST:
             if self[loc] & d != 0:
                 continue
@@ -108,7 +112,7 @@ class Board:
             # Weird moves when a player is blocking
             ply = None
             for p in self.players:
-                if p.location == newloc and p.location != loc:
+                if p and p.location == newloc and p.location != loc:
                     ply = p
                     break
             if ply:
@@ -117,19 +121,19 @@ class Board:
                     newloc = loc[0]+Directions.TO_ADJ[d][0], loc[1]+Directions.TO_ADJ[d][1]
                     if newloc[0] < 0 or newloc[0] >= BOARD_DIM or newloc[1] < 0 or newloc[1] >= BOARD_DIM:
                         continue
+                    yield newloc
                 else:
                     d1, d2 = Directions.PERPENDICULAR[d]
                     if self[newloc] & d1 == 0:
                         newloc2 = loc[0]+Directions.TO_ADJ[d1][0], loc[1]+Directions.TO_ADJ[d1][1]
                         if newloc2[0] >= 0 and newloc2[0] < BOARD_DIM and newloc2[1] >= 0 and newloc2[1] < BOARD_DIM:
-                            adj.append(newloc2)
+                            yield newloc2
                     if self[newloc] & d2 == 0:
                         newloc2 = loc[0]+Directions.TO_ADJ[d2][0], loc[1]+Directions.TO_ADJ[d2][1]
                         if newloc2[0] >= 0 and newloc2[0] < BOARD_DIM and newloc2[1] >= 0 and newloc2[1] < BOARD_DIM:
-                            adj.append(newloc2)
+                            yield newloc2
             else:
-                adj.append(newloc)
-        return adj
+                yield newloc
     
     def checkWall(self, wall):
         """
@@ -150,7 +154,7 @@ class Board:
         try:
             self.board = TempWallView(board, wall)
             for ply in self.players:
-                if self.findPathToGoal(ply.location, ply.id) == None:
+                if ply and self.findPathToGoal(ply.location, ply.id) == None:
                     return False
         finally:
             # Make sure we put it back
@@ -160,15 +164,14 @@ class Board:
 
     def copy(self):
         """
-        Creates a shallow copy of the player data.
+        Creates a copy of the player data.
         """
         new = Board.__new__(Board) # Create a new object without calling __init__
 
         # Copy over attributes
         new.board = self.board.copy()
-        new.walls = self.walls.copy()
-        new.players = self.players.copy()
-        new.turn = self.turn
+        new.walls = self.walls.copy() # Wall are immutable, so they don't need to be deep copied
+        new.players = [p and p.copy() or p for p in self.players]
 
         return new
 
@@ -207,7 +210,19 @@ class Board:
 
     ############################################################################################
     # Update Functions
-
+    
+    def applyMove(self, move):
+        """
+        Calls either updatePlayerLocation or addWall with values from the passed PlayerMove object.
+        """
+        if move.move:
+            self.updatePlayerLocation(move.playerId-1, (move.r2, move.c2))
+        else:
+            w = Wall(move.playerId-1, move.r1, move.c1, move.r2, move.c2)
+            assert(self.checkWall(w))
+            self.addWall(w)
+        return self
+        
     def updatePlayerLocation(self, plyid, loc):
         """
         updatePlayerLocation: int, (r,c)
@@ -233,7 +248,59 @@ class Board:
                 self[i,wall.c1-1] |= Directions.RIGHT
         self.walls.append(wall)
         self.getPlayer(wall.owner).walls -= 1
-
+        
+    ############################################################################################
+    # AI functions
+    
+    def isTerminal(self):
+        """
+        If a player is on one of the goal spaces, returns that player.
+        Otherwise, returns None
+        """
+        for p in self.players:
+            if _goal_settings[p.id][1](p.location):
+                return p
+        return None
+    
+    def evaluate(self, plyid):
+        """
+        Estimates how well off plyid is in the current situation.
+        """
+        # TODO: This can probably be tweaked
+        score = 0
+        for p in self.players:
+            s = len(self.findPathToGoal(p.location, p.id))
+            if p.id == plyid:
+                score -= s
+            else:
+                score += s
+        return s
+    
+    def generateNext(self, plyid):
+        """
+        Returns a generator that yields every possible PlayerMove from this configuration by
+        player plyid
+        """
+        ply = self.getPlayer(plyid)
+        
+        # Movement
+        for loc in self.getAdjacent(ply.location):
+            yield PlayerMove(ply.id+1, True, ply.location[0], ply.location[1], loc[0], loc[1])
+        
+        if ply.walls != 0:
+            # Vertical walls
+            for c in range(1, BOARD_DIM):
+                for r in range(0, BOARD_DIM-1):
+                    w = Wall(ply.id+1, r, c, r+2, c)
+                    if self.checkWall(w):
+                        yield w.toMove()
+            # Horizontal walls
+            for r in range(1, BOARD_DIM):
+                for c in range(0, BOARD_DIM-1):
+                    w = Wall(ply.id+1, r, c, r, c+2)
+                    if self.checkWall(w):
+                        yield w.toMove()
+    
     ############################################################################################
     # Pathfinding
 
