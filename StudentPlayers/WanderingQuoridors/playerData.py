@@ -192,6 +192,8 @@ class PlayerData:
         Updates a player's location.
         """
         self.playerLocations[plyid-1] = loc
+        if plyid-1 == self.playerId:
+            self.placewall = True
 
     def addWall(self, wall):
         """
@@ -232,6 +234,7 @@ class PlayerData:
         
         if wall.owner == self.playerId + 1:
             self.numWalls -= 1
+            self.placewall = False
         return True
 
     def getMove(self):
@@ -241,7 +244,6 @@ class PlayerData:
         testpd = self.copy()
 
         if self.placewall and self.numWalls > 0:
-            self.placewall = False
             # Generate a wall
             while True:
                 w = randomWall(testpd.playerId + 1)
@@ -250,7 +252,6 @@ class PlayerData:
                             
             return w.toMove()
         else:
-            self.placewall = True
             # Move along the shortest path
             mypos = self.getMyPos()
             path = self.findPathToGoal(mypos, self.playerId)
