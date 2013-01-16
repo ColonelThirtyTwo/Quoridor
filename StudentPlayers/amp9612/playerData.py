@@ -97,7 +97,6 @@ class PlayerData:
                 plys.append(None)
         self.myid = plyid
         self.currentboard = Board(bytearray(BOARD_DIM*BOARD_DIM), [], plys)
-        self.placewall = False
     
     def applyMove(self, move):
         """
@@ -114,6 +113,15 @@ class PlayerData:
         tree, _ = temp
         move, _ = min(tree.items(), key=lambda n: n[1][1])
         return move
+
+    def getMove_toGoal(self):
+        """
+        Alternate getMove that just moves toward the goal
+        """
+        p = self.currentboard.players[self.myid]
+        path = self.currentboard.findPathToGoal(p.location, p.id)
+        assert(path)
+        return PlayerMove(p.id+1, True, p.location[0], p.location[1], path[1][0], path[1][1])
     
     def invalidatePlayer(self, plyid):
         """

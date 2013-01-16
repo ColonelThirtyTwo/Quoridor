@@ -41,32 +41,6 @@ class Player:
         return "Player({0},{1},{2})".format(self.id, self.location, self.walls)
     __repr__ = __str__
 
-class TempWallView:
-    """
-    A view object for temporairly setting a wall in a board without modifying the underlying
-    board bytearr or creating a clone of it. Used during wall validity checking to be able
-    to pathfind with the wall without actually adding it.
-    """
-    def __init__(self, board, wall):
-        self.board = board
-        self.wall = wall
-    
-    def __getitem__(self, i):
-        r = i // BOARD_DIM
-        c = i % BOARD_DIM
-        w = self.wall
-        if w.isHoriz() and c >= w.c1 and c < w.c2:
-            if r == w.r1:
-                return self.board[i] | Directions.UP
-            elif r == w.r1 - 1:
-                return self.board[i] | Directions.DOWN
-        elif w.isVert() and r >= w.r1 and r < w.r2:
-            if c == w.c1:
-                return self.board[i] | Directions.LEFT
-            elif c == w.c1 - 1:
-                return self.board[i] | Directions.RIGHT
-        return self.board[i]
-
 class Board:
     """
     A representation of the quoridor board.
@@ -152,7 +126,8 @@ class Board:
         # Temporairly 'add' the wall and make sure players can still get to their goals
         board = self.board
         try:
-            self.board = TempWallView(board, wall)
+            self.board = self.board.copy()
+            self.addWall(wall, True)
             for ply in self.players:
                 if ply and self.findPathToGoal(ply.location, ply.id) == None:
                     return False
@@ -230,11 +205,13 @@ class Board:
         """
         self.getPlayer(plyid).location = loc
 
-    def addWall(self, wall):
+    def addWall(self, wall, byteonly=False):
         """
         addWall: Wall -> Boolean
         Adds a wall to the internal board representation.
         Assumes the wall is valid.
+            wall: Wall to add
+            byteonly: Internal use only
         """
         if wall.isHoriz():
             # Horizontal wall
@@ -246,8 +223,10 @@ class Board:
             for i in range(wall.r1, wall.r2):
                 self[i,wall.c1  ] |= Directions.LEFT
                 self[i,wall.c1-1] |= Directions.RIGHT
-        self.walls.append(wall)
-        self.getPlayer(wall.owner).walls -= 1
+
+        if not byteonly:
+            self.walls.append(wall)
+            self.getPlayer(wall.owner).walls -= 1
         
     ############################################################################################
     # AI functions

@@ -80,7 +80,7 @@ def move(playerData):
         returns:
             the move chosen, in the form of an instance of PlayerMove
     """
-    return playerData.getMove()
+    return playerData.getMove_toGoal()
 
 def player_invalidated(playerData, playerId):
     """
