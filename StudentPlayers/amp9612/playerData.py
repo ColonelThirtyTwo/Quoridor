@@ -102,7 +102,7 @@ class PlayerData:
         """
         Returns the move the player should make
         """
-        tree, _ = alphabeta(self.currentboard, 1, self.myid)
+        tree, _ = alphabeta(self.currentboard, 2, self.myid)
         move, _ = min(tree.items(), key=lambda n: n[1][1])
         return move
 

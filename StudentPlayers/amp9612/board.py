@@ -7,6 +7,7 @@ from Model.interface import PlayerMove, BOARD_DIM
 from .directions import Directions
 from .wall import Wall
 from .binheap import BinaryHeapMap
+from collections import deque
 
 # Heuristic and isgoal functions for each of the four goal rows
 _goal_settings = [
@@ -278,7 +279,9 @@ class Board:
         ply = self.getPlayer(plyid)
         
         # Movement
+        canmove = False
         for loc in self.getAdjacent(ply.location):
+            canmove = True
             yield PlayerMove(ply.id+1, True, ply.location[0], ply.location[1], loc[0], loc[1])
         
         if ply.walls != 0:
@@ -287,13 +290,18 @@ class Board:
                 for r in range(0, BOARD_DIM-1):
                     w = Wall(ply.id+1, r, c, r+2, c)
                     if self.checkWall(w):
+                        canmove = True
                         yield w.toMove()
             # Horizontal walls
             for r in range(1, BOARD_DIM):
                 for c in range(0, BOARD_DIM-1):
                     w = Wall(ply.id+1, r, c, r, c+2)
                     if self.checkWall(w):
+                        canmove = True
                         yield w.toMove()
+
+        if not canmove:
+            yield PlayerMove(ply.id+1, True, ply.location[0], ply.location[1], ply.location[0], ply.location[1])
     
     ############################################################################################
     # Pathfinding
@@ -336,6 +344,31 @@ class Board:
                         nopen.update(i, g_score[i]+heuristic(i))
         # Explored all reachable nodes, path doesn't exist.
         return None
+
+    def _bfs(self, start, atgoal):
+        """
+        Generic BFS Algorithm
+            start: Starting point
+            atgoal: function that takes a location and returns true if that location is a destination
+        Returns a list of (r,c) tuples representing the path, or None if no path exists
+        """
+        queue = deque()
+        queue.append(start)
+        closed = {start : None}
+        while queue:
+            current = queue.popleft()
+            if atgoal(current):
+                l = []
+                while current != None:
+                    l.append(current)
+                    current = closed[current]
+                l.reverse()
+                return l
+            for i in self.getAdjacent(current):
+                if i not in closed:
+                    closed[i] = current
+                    queue.append(i)
+        return None
         
     def findPathToLoc(self, start, dest):
         """
@@ -354,4 +387,5 @@ class Board:
         Finds the shortest valid path to the goal
         """
         heuristic, atgoal = _goal_settings[goalnum]
-        return self._astar(start, heuristic, atgoal)
+        #return self._astar(start, heuristic, atgoal)
+        return self._bfs(start, atgoal)
