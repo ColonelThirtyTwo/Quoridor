@@ -71,12 +71,6 @@ def alphabeta(board, depth, plyid, a=-inf, b=inf, curplyid=None):
                 break
         return treenode, b
 
-import cProfile
-global temp
-def alphabeta_wrapper(*args, **kwargs):
-    global temp
-    temp = alphabeta(*args, **kwargs)
-
 class PlayerData:
     """
     State for the quoridor game
@@ -108,9 +102,7 @@ class PlayerData:
         """
         Returns the move the player should make
         """
-        #tree, _ = alphabeta(self.currentboard, 3, self.myid)
-        cProfile.runctx("alphabeta_wrapper(self.currentboard, 1, self.myid)", globals(), locals(), "profile.out")
-        tree, _ = temp
+        tree, _ = alphabeta(self.currentboard, 1, self.myid)
         move, _ = min(tree.items(), key=lambda n: n[1][1])
         return move
 

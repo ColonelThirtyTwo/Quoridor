@@ -74,6 +74,21 @@ class Board:
     def getAdjacent(self, loc):
         """
         Returns a generator of all adjacent spaces that can be accessed from this space.
+        This will go through players without hopping over them.
+        """
+        mask = self[loc]
+        if mask & Directions.UP    == 0 and loc[0] > 0:
+            yield loc[0]-1, loc[1]
+        if mask & Directions.DOWN  == 0 and loc[0] < BOARD_DIM-1:
+            yield loc[0]+1, loc[1]
+        if mask & Directions.LEFT  == 0 and loc[1] > 0:
+            yield loc[0], loc[1]-1
+        if mask & Directions.RIGHT == 0 and loc[1] < BOARD_DIM-1:
+            yield loc[0], loc[1]+1
+
+    def getAdjacentHop(self, loc):
+        """
+        Returns a generator of all adjacent spaces that can be accessed from this space.
             loc: (r,c) location
         """
         for d in Directions.LIST:

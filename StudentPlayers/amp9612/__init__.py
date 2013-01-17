@@ -65,6 +65,8 @@ def last_move(playerData, move):
     playerData.applyMove(move)
     return playerData
 
+from profilehooks import profile
+@profile(filename="profile.out", sort="time")
 def move(playerData):
     """
         Part 3 - 4
@@ -80,7 +82,7 @@ def move(playerData):
         returns:
             the move chosen, in the form of an instance of PlayerMove
     """
-    return playerData.getMove_toGoal()
+    return playerData.getMove()
 
 def player_invalidated(playerData, playerId):
     """
