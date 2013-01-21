@@ -106,6 +106,37 @@ class PlayerData:
             if newloc: adj.append(newloc)
         return adj
 
+    def getAdjacentHop(self, loc):
+        """
+        Returns a list of all adjacent spaces that can be accessed from this space,
+        also computing moves where players can hop over each other
+            loc: (r,c) location
+        """
+        adj = []
+        for d in Directions.LIST:
+            loc2 = self.getMoveTo(loc, d)
+            if not loc2:
+                continue
+            if self.playerAt(loc2):
+                loc3 = self.getMoveTo(loc2, d)
+                if loc3 and not self.playerAt(loc3):
+                    adj.append(loc3)
+                else:
+                    for loc4 in self.getAdjacent(loc2):
+                        if loc4 != loc:
+                            adj.append(loc4)
+            else:
+                adj.append(loc2)
+        return adj
+
+    def playerAt(self, loc):
+        """
+        Returns if a player is at a specified location
+        """
+        for p in self.playerLocations:
+            if p == loc:
+                return True
+
     def getMoveTo(self, loc, d):
         """
         getMoveTo: (r,c), Direction -> (r,c)
@@ -291,7 +322,7 @@ class PlayerData:
                 l.reverse()
                 return l
             nclosed.add(current)
-            for i in self.getAdjacent(current):
+            for i in self.getAdjacentHop(current):
                 if i in nclosed:
                     continue
                 i_gscore = g_score[current] + 1

@@ -152,11 +152,5 @@ def player_invalidated(playerData, playerId):
             this player's updated playerData
     """
     
-    # Update your player data to reflect the invalidation.
-    # FYI, the player's piece is removed from the board,
-    # but not its walls.
-    
-    # When you are working on part 4, there is a small chance you'd
-    # want to change your strategy when a player is kicked out.
-    
+    playerData.playerLocations[playerId-1] = False
     return playerData
