@@ -66,9 +66,7 @@ def last_move(playerData, move):
     if move.move:
         playerData.updatePlayerLocation(move.playerId, (move.r2, move.c2))
     else:
-        wall = Wall(move.playerId, move.r1, move.c1, move.r2, move.c2)
-        if not playerData.addWall(wall):
-            raise RuntimeError("Got invalid wall from engine: "+str(wall))
+        playerData.addWall(Wall(move.playerId, move.r1, move.c1, move.r2, move.c2))
 
     return playerData
 
@@ -92,7 +90,7 @@ def get_neighbors(playerData, r, c):
             away.
     """
     
-    return playerData.getAdjacent((r,c))
+    return [x for x in playerData.board[r,c]]
 
 def get_shortest_path(playerData, r1, c1, r2, c2):
     """
@@ -117,7 +115,7 @@ def get_shortest_path(playerData, r1, c1, r2, c2):
             If there is no path, an empty list, [], should be returned.
     """
     
-    return playerData.findPathToLoc((r1,c1), (r2,c2))
+    return playerData.findPathToLoc((r1,c1), (r2,c2)) or []
 
 def move(playerData):
     """

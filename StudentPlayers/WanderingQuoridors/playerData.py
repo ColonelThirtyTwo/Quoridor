@@ -19,44 +19,6 @@ _goal_settings = [
     (lambda loc: abs(loc[1]), lambda loc: loc[1] == 0)
 ]
 
-class Directions:
-    """
-    Bitwise enumerations for representing directions
-    """
-    UP = 0x1
-    RIGHT = 0x2
-    DOWN = 0x4
-    LEFT = 0x8
-    
-    LIST = (DOWN, RIGHT, UP, LEFT)
-    TO_ADJ = {LEFT : (0,-1), RIGHT : (0,1), UP : (-1,0), DOWN : (1,0)}
-
-class TempWallView:
-    """
-    A view object for temporairly setting a wall in a board without modifying the underlying
-    board bytearr or creating a clone of it. Used during wall validity checking to be able
-    to pathfind with the wall without actually adding it.
-    """
-    def __init__(self, board, wall):
-        self.board = board
-        self.wall = wall
-    
-    def __getitem__(self, i):
-        r = i // BOARD_DIM
-        c = i % BOARD_DIM
-        w = self.wall
-        if w.isHoriz() and c >= w.c1 and c < w.c2:
-            if r == w.r1:
-                return self.board[i] | Directions.UP
-            elif r == w.r1 - 1:
-                return self.board[i] | Directions.DOWN
-        elif w.isVert() and r >= w.r1 and r < w.r2:
-            if c == w.c1:
-                return self.board[i] | Directions.LEFT
-            elif c == w.c1 - 1:
-                return self.board[i] | Directions.RIGHT
-        return self.board[i]
-
 def randomWall(plyid):
     """
     Generates a random wall, owned by plyid.
@@ -87,46 +49,41 @@ class PlayerData:
         self.numWalls = numWalls
         self.playerLocations = playerLocations
         
-        self.board = bytearray(BOARD_DIM*BOARD_DIM)
+        self.board = {}
         self.walls = []
         self.placewall = False
+        
+        # Build board
+        tmplist = []
+        for r in range(BOARD_DIM):
+            for c in range(BOARD_DIM):
+                if r != 0:           tmplist.append((r-1,c))
+                if r != BOARD_DIM-1: tmplist.append((r+1,c))
+                if c != 0:           tmplist.append((r,c-1))
+                if c != BOARD_DIM-1: tmplist.append((r,c+1))
+                self.board[r,c] = frozenset(tmplist)
+                tmplist.clear()
 
     ############################################################################################
     # Helper functions
 
-    def getAdjacent(self, loc):
-        """
-        Returns a list of all adjacent spaces that can be accessed from this space.
-            loc: (r,c) location
-        """
-        adj = []
-        for d in Directions.LIST:
-            newloc = self.getMoveTo(loc, d)
-            if newloc: adj.append(newloc)
-        return adj
-
     def getAdjacentHop(self, loc):
         """
-        Returns a list of all adjacent spaces that can be accessed from this space,
+        Iterates over all adjacent spaces that can be accessed from this space,
         also computing moves where players can hop over each other
             loc: (r,c) location
         """
-        adj = []
-        for d in Directions.LIST:
-            loc2 = self.getMoveTo(loc, d)
-            if not loc2:
-                continue
+        for loc2 in self.board[loc]:
             if self.playerAt(loc2):
-                loc3 = self.getMoveTo(loc2, d)
-                if loc3 and not self.playerAt(loc3):
-                    adj.append(loc3)
+                loc3 = loc2[0]*2-loc[0], loc2[1]*2-loc[1]
+                if loc3 in self.board[loc2] and not self.playerAt(loc3):
+                    yield loc3
                 else:
-                    for loc4 in self.getAdjacent(loc2):
+                    for loc4 in self.board[loc2]:
                         if loc4 != loc:
-                            adj.append(loc4)
+                            yield loc4
             else:
-                adj.append(loc2)
-        return adj
+                yield loc2
 
     def playerAt(self, loc):
         """
@@ -135,18 +92,6 @@ class PlayerData:
         for p in self.playerLocations:
             if p == loc:
                 return True
-
-    def getMoveTo(self, loc, d):
-        """
-        getMoveTo: (r,c), Direction -> (r,c)
-        Returns the location aFjacent to the specified location in the direction of the passed Direction, or
-        None if it is not possible to move in that direction
-        """
-        if self[loc] & d != 0: return None # Blocked
-        r,c = loc[0]+Directions.TO_ADJ[d][0], loc[1]+Directions.TO_ADJ[d][1]
-        if r < 0 or r >= BOARD_DIM or c < 0 or c >= BOARD_DIM:
-            return None # Out of bounds
-        return (r,c)
 
     def getMyPos(self):
         """
@@ -169,24 +114,6 @@ class PlayerData:
         new.placewall = self.placewall
 
         return new
-
-    def __getitem__(self, loc):
-        """
-        __getitem__: (r,c) -> int
-        Returns the bitflags at the specified location
-        """
-        if loc[0] < 0 or loc[0] >= BOARD_DIM or loc[1] < 0 or loc[1] >= BOARD_DIM:
-            raise IndexError("Invalid location: %d,%d" % (loc[0], loc[1]))
-        return self.board[loc[0]*BOARD_DIM+loc[1]]
-
-    def __setitem__(self, loc, v):
-        """
-        __setitem__: (r,c), int
-        Sets the bitflags at the specified location
-        """
-        if loc[0] < 0 or loc[0] >= BOARD_DIM or loc[1] < 0 or loc[1] >= BOARD_DIM:
-            raise IndexError("Invalid location: %d,%d" % (loc[0], loc[1]))
-        self.board[loc[0]*BOARD_DIM+loc[1]] = v
         
     def __str__(self):
         """
@@ -195,15 +122,7 @@ class PlayerData:
             self - the PlayerData object
         """
         
-        b = "    "
-        for i in range(BOARD_DIM):
-            b += "{:2}   ".format(i)
-        b += "\n    " + "LDRU "*BOARD_DIM + "\n"
-        for r in range(BOARD_DIM):
-            b += "{:2}  ".format(r)
-            for c in range(BOARD_DIM):
-                b += "{:04b} ".format(self[r,c])
-            b += "\n"
+        b = str(self.board)
 
         result = "PlayerData= " \
                     + "playerId: " + str(self.playerId) \
@@ -224,12 +143,10 @@ class PlayerData:
         self.playerLocations[plyid-1] = loc
         if plyid-1 == self.playerId:
             self.placewall = True
-
-    def addWall(self, wall):
+    
+    def checkWall(self, wall):
         """
-        addWall: Wall -> Boolean
-        Adds a wall to the internal board representation.
-        Returns true if successful, false if the wall is invalid or collides with other walls.
+        Returns True if wall can be successfully placed
         """
         if not wall.isValid():
             return False
@@ -238,48 +155,55 @@ class PlayerData:
             if wall.intersects(i):
                 return False
         
-        # Temporairly 'add' the wall and make sure players can still get to their goals
         board = self.board
         try:
-            self.board = TempWallView(board, wall)
-            canBypass = True
+            self.board = board.copy()
+            self.addWall(wall, True)
             for i, loc in enumerate(self.playerLocations):
                 if loc and self.findPathToGoal(loc, i) == None:
                     return False
         finally:
-            # Make sure we put it back
             self.board = board
+        
+        return True
+    
+    def addWall(self, wall, onlytoboard=False):
+        """
+        Adds a wall to the internal board representation. Assumes the wall is valid and can be added
+        
+        onlytoboard is an internal parameter and should not be used.
+        """
 
         if wall.isHoriz():
             # Horizontal wall
-            for i in range(wall.c1, wall.c2):
-                self[wall.r1  ,i] |= Directions.UP
-                self[wall.r1-1,i] |= Directions.DOWN
+            self.board[wall.r1  ,wall.c1  ] = self.board[wall.r1  ,wall.c1  ].difference(((wall.r1-1,wall.c1  ),))
+            self.board[wall.r1  ,wall.c1+1] = self.board[wall.r1  ,wall.c1+1].difference(((wall.r1-1,wall.c1+1),))
+            self.board[wall.r1-1,wall.c1  ] = self.board[wall.r1-1,wall.c1  ].difference(((wall.r1  ,wall.c1  ),))
+            self.board[wall.r1-1,wall.c1+1] = self.board[wall.r1-1,wall.c1+1].difference(((wall.r1  ,wall.c1+1),))
         else:
             # Vertical wall
-            for i in range(wall.r1, wall.r2):
-                self[i,wall.c1  ] |= Directions.LEFT
-                self[i,wall.c1-1] |= Directions.RIGHT
-        self.walls.append(wall)
-        
-        if wall.owner == self.playerId + 1:
-            self.numWalls -= 1
-            self.placewall = False
-        return True
+            self.board[wall.r1  ,wall.c1  ] = self.board[wall.r1  ,wall.c1  ].difference(((wall.r1  ,wall.c1-1),))
+            self.board[wall.r1+1,wall.c1  ] = self.board[wall.r1+1,wall.c1  ].difference(((wall.r1+1,wall.c1-1),))
+            self.board[wall.r1  ,wall.c1-1] = self.board[wall.r1  ,wall.c1-1].difference(((wall.r1  ,wall.c1  ),))
+            self.board[wall.r1+1,wall.c1-1] = self.board[wall.r1+1,wall.c1-1].difference(((wall.r1+1,wall.c1  ),))
+                
+        if not onlytoboard:
+            self.walls.append(wall)
+            if wall.owner == self.playerId + 1:
+                self.numWalls -= 1
+                self.placewall = False
 
     def getMove(self):
         """
         Returns the PlayerMove object representing the move that the player should make
         """
-        testpd = self.copy()
 
         if self.placewall and self.numWalls > 0:
             # Generate a wall
             while True:
-                w = randomWall(testpd.playerId + 1)
-                if testpd.addWall(w):
+                w = randomWall(self.playerId + 1)
+                if self.checkWall(w):
                     break
-                            
             return w.toMove()
         else:
             # Move along the shortest path
@@ -315,7 +239,7 @@ class PlayerData:
                     current = closed[current]
                 l.reverse()
                 return l
-            for i in self.getAdjacent(current):
+            for i in self.board[current]:
                 if i not in closed:
                     closed[i] = current
                     queue.append(i)
