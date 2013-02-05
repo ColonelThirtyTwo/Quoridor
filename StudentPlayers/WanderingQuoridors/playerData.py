@@ -7,6 +7,7 @@ Author: Joseph Moreyn (jbm6331@rit.edu)
 from Model.interface import BOARD_DIM, PlayerMove
 from .binheap import BinaryHeapMap
 from .wall import Wall
+from collections import deque
 import random
 
 # Heuristic and isgoal functions for each of the four goal rows
@@ -295,44 +296,29 @@ class PlayerData:
     ############################################################################################
     # Pathfinding
 
-    def _astar(self, start, heuristic, atgoal):
+    def _bfs(self, start, atgoal):
         """
-        _astar: (r,c), int function(loc), bool function(loc) -> list
-        Generic A* Algorithm.
+        Generic BFS Algorithm
             start: Starting point
-            heuristic: function that takes a location and returns its heuristic score
             atgoal: function that takes a location and returns true if that location is a destination
         Returns a list of (r,c) tuples representing the path, or None if no path exists
         """
-        nclosed = set()
-        nopen = BinaryHeapMap()
-        nopen.add(start, 0)
-        came_from = {start : None}
-        g_score = {start : 0}
-        
-        while nopen:
-            current, _ = nopen.pop()
+        queue = deque()
+        queue.append(start)
+        closed = {start : None}
+        while queue:
+            current = queue.popleft()
             if atgoal(current):
                 l = []
                 while current != None:
                     l.append(current)
-                    current = came_from[current]
+                    current = closed[current]
                 l.reverse()
                 return l
-            nclosed.add(current)
-            for i in self.getAdjacentHop(current):
-                if i in nclosed:
-                    continue
-                i_gscore = g_score[current] + 1
-                isopen = i in nopen
-                if not isopen or g_score[i] > i_gscore:
-                    came_from[i] = current
-                    g_score[i] = i_gscore
-                    if not isopen:
-                        nopen.add(i, g_score[i]+heuristic(i))
-                    else:
-                        nopen.update(i, g_score[i]+heuristic(i))
-        # Explored all reachable nodes, path doesn't exist.
+            for i in self.getAdjacent(current):
+                if i not in closed:
+                    closed[i] = current
+                    queue.append(i)
         return None
         
     def findPathToLoc(self, start, dest):
@@ -342,11 +328,9 @@ class PlayerData:
         Returns:
             a list of (r,c) tuples representing the path.
         """
-        def heuristic(loc):
-            return abs(dest[0]-loc[0]) + abs(dest[1]-loc[1])
         def atgoal(loc):
             return loc == dest
-        return self._astar(start, heuristic, atgoal)
+        return self._bfs(start, atgoal)
     
     def findPathToGoal(self, start, goalnum):
         """
@@ -354,4 +338,4 @@ class PlayerData:
         Finds the shortest valid path to the goal
         """
         heuristic, atgoal = _goal_settings[goalnum]
-        return self._astar(start, heuristic, atgoal)
+        return self._bfs(start, atgoal)

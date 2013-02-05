@@ -117,7 +117,7 @@ def get_shortest_path(playerData, r1, c1, r2, c2):
             If there is no path, an empty list, [], should be returned.
     """
     
-    return playerData.findPath((r1,c1), (r2,c2))
+    return playerData.findPathToLoc((r1,c1), (r2,c2))
 
 def move(playerData):
     """
