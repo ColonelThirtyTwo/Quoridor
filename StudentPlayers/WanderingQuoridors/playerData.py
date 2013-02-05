@@ -1,9 +1,7 @@
 """
-Quoridor II: Student Computer Player
-
-A sample class you may use to hold your state data
-Author: Adam Oest (amo9149@rit.edu)
+Representation of a quoridor board
 Author: Alex Parrill (amp9612@rit.edu)
+Author: Joseph Moreyn (jbm6331@rit.edu)
 """
 
 from Model.interface import BOARD_DIM, PlayerMove

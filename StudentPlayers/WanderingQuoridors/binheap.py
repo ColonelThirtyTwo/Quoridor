@@ -2,6 +2,7 @@
 Binary heap implementation
 
 Author: Alex Parrill (amp9612@rit.edu)
+Author: Joseph Moreyn (jbm6331@rit.edu)
 """
 
 from math import floor

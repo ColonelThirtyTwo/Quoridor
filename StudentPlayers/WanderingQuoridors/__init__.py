@@ -1,8 +1,8 @@
 """
 Quoridor student player starter file
- 
-Author: Adam Oest
-Date: July, 2012
+
+Author: Alex Parrill (amp9612@rit.edu)
+Author: Joseph Moreyn (jbm6331@rit.edu)
 """
 
 # Imports the player move class as well as the board size constant

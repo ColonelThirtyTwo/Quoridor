@@ -1,6 +1,7 @@
 """
 Wall class
 Author: Alex Parrill (amp9612@rit.edu)
+Author: Joseph Moreyn (jbm6331@rit.edu)
 """
 
 from Model.interface import BOARD_DIM, PlayerMove
