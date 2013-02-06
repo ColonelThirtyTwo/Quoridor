@@ -37,8 +37,7 @@ def init(logger, playerId, numWalls, playerHomes):
             a PlayerData object containing all of this player module's data
     """
     
-    playerData = PlayerData(playerId-1, numWalls, list(playerHomes))
-    return playerData
+    return PlayerData(playerId-1, numWalls, list(playerHomes))
 
 def last_move(playerData, move):
     """
@@ -63,11 +62,7 @@ def last_move(playerData, move):
         returns:
             this player module's updated (playerData) data structure
     """
-    if move.move:
-        playerData.updatePlayerLocation(move.playerId, (move.r2, move.c2))
-    else:
-        playerData.addWall(Wall(move.playerId, move.r1, move.c1, move.r2, move.c2))
-
+    playerData.applyMove(move)
     return playerData
 
 def get_neighbors(playerData, r, c):
@@ -90,7 +85,7 @@ def get_neighbors(playerData, r, c):
             away.
     """
     
-    return [x for x in playerData.board[r,c]]
+    return [x for x in playerData.currentboard.board[r,c]]
 
 def get_shortest_path(playerData, r1, c1, r2, c2):
     """
@@ -115,7 +110,7 @@ def get_shortest_path(playerData, r1, c1, r2, c2):
             If there is no path, an empty list, [], should be returned.
     """
     
-    return playerData.findPathToLoc((r1,c1), (r2,c2)) or []
+    return playerData.currentboard.findPathToLoc((r1,c1), (r2,c2)) or []
 
 def move(playerData):
     """
