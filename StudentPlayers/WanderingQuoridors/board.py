@@ -209,7 +209,7 @@ class Board:
 		
 		# Movement
 		canmove = False
-		for loc in self.getAdjacent(ply.location):
+		for loc in self.board[ply.location]:
 			canmove = True
 			yield HashablePlayerMove(ply.id+1, True, ply.location[0], ply.location[1], loc[0], loc[1])
 		
@@ -217,14 +217,14 @@ class Board:
 			# Vertical walls
 			for c in range(1, BOARD_DIM):
 				for r in range(0, BOARD_DIM-1):
-					w = Wall(ply.id+1, r, c, r+2, c)
+					w = Wall(ply.id, r, c, r+2, c)
 					if self.checkWall(w):
 						canmove = True
 						yield w.toMove()
 			# Horizontal walls
 			for r in range(1, BOARD_DIM):
 				for c in range(0, BOARD_DIM-1):
-					w = Wall(ply.id+1, r, c, r, c+2)
+					w = Wall(ply.id, r, c, r, c+2)
 					if self.checkWall(w):
 						canmove = True
 						yield w.toMove()
