@@ -13,52 +13,31 @@ from profilehooks import profile
 
 inf = float("inf")
 
-def minimax(board, depth, plyid, curplyid=None):
-	curplyid = curplyid or plyid
-	
-	if depth <= 0 or board.isTerminal():
-		return None, board.evaluate(plyid)
-	
-	# Compute next ID
-	nextid = (curplyid+1) % len(board.players)
-	while not board.players[nextid]:
-		nextid = (nextid+1) % len(board.players)
-	
-	if curplyid == plyid:
-		#max
-		bestmove, bestscore = None, -inf
-		for move in board.generateNext(curplyid):
-			newmove, newscore = minimax(board.copy().applyMove(move),depth-1,plyid,nextid)
-			if newscore > bestscore:
-				bestmove = move
-				bestscore = newscore
-		return bestmove, bestscore
-	else:
-		#min
-		bestmove, bestscore = None, inf
-		for move in board.generateNext(curplyid):
-			newmove, newscore = minimax(board.copy().applyMove(move),depth-1,plyid,nextid)
-			if newscore < bestscore:
-				bestmove = move
-				bestscore = newscore
-		return bestmove, bestscore
-
 def alphabeta(board, depth, plyid, a=-inf, b=inf, curplyid=None):
 	"""
 	Generates and runs through a decision tree using minimax and alpha-beta pruning
 	http://en.wikipedia.org/wiki/Minimax and http://en.wikipedia.org/wiki/Alpha-beta_pruning
 		board: Starting configuration
-		depth: Pile depth to search
-		plyid: Starting player's id
+		depth: Number of piles to search
+		plyid: Maxing player's id
 		a: Recursive parameter, don't use
 		b: Recursive parameter, don't use
 		curplyid: Recursive parameter, don't use
-	Returns: A dictionary tree with move : (node, score) entries of all the branches visited
+	Returns:
+		The best PlayerMove object found
+		The score of that move
 	"""
 	curplyid = curplyid or plyid
 	
-	if depth <= 0 or board.isTerminal():
+	if depth <= 0:
 		return board, board.evaluate(plyid)
+	
+	p = board.isTerminal()
+	if p:
+		if p.id == plyid:
+			return None, inf
+		else:
+			return None, -inf
 	
 	# Compute next ID
 	nextid = (curplyid+1) % len(board.players)
@@ -131,10 +110,6 @@ class PlayerData:
 	def getMove_alphabeta(self):
 		bestmove, _ = alphabeta(self.currentboard, 2, self.me)
 		return bestmove
-	def getMove_minimax(self):
-		bestmove, score = minimax(self.currentboard, 1, self.me)
-		return bestmove
-		
 	getMove = getMove_alphabeta
 	
 	def invalidate(self, plyid):

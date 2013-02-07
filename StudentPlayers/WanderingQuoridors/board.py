@@ -196,15 +196,16 @@ class Board:
 		Estimates how well off plyid is in the current situation.
 		"""
 		# TODO: This can probably be tweaked
-		score = 0
+		myscore = 0
+		enemyscore = 0
 		for p in self.players:
 			if p:
 				s = len(self.findPathToGoal(p.location, p.id))
 				if p.id == plyid:
-					score -= s
+					myscore = s
 				else:
-					score += s
-		return score
+					enemyscore += s
+		return enemyscore - myscore
 	
 	def generateNext(self, plyid):
 		"""
