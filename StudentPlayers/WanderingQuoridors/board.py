@@ -206,6 +206,7 @@ class Board:
 		for p in self.players:
 			if p:
 				s = len(self.findPathToGoal(p.location, p.id))-1
+				assert s != 0
 				if p.id == plyid:
 					myscore = -s
 				else:

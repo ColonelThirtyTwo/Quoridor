@@ -30,21 +30,19 @@ def alphabeta(board, depth, plyid, a=-inf, b=inf, curplyid=None):
 	if curplyid is None:
 		curplyid = plyid
 	
-	# Compute next ID
-	nextid = (curplyid+1) % len(board.players)
-	while not board.players[nextid]:
-		nextid = (nextid+1) % len(board.players)
-	#print(depth, curplyid, nextid)
-	
-	if depth <= 0:
-		return board, board.evaluate(plyid)
-	
 	p = board.isTerminal()
 	if p:
 		if p.id == plyid:
 			return None, inf
 		else:
 			return None, -inf
+	
+	if depth <= 0:
+		return board, board.evaluate(plyid)
+	
+	nextid = (curplyid+1) % len(board.players)
+	while not board.players[nextid]:
+		nextid = (nextid+1) % len(board.players)
 	
 	#print(nextid)
 	if curplyid == plyid:
@@ -134,7 +132,11 @@ class PlayerData:
 			return getMoveToGoal(self.currentboard, self.me)
 		else:
 			bestmove, _ = alphabeta(self.currentboard, 2, self.me)
-			return bestmove
+			if bestmove:
+				return bestmove
+			else:
+				print("!!! Did not get a move !!!")
+				return getMoveToGoal(self.currentboard, self.me)
 	
 	def invalidate(self, plyid):
 		"""
