@@ -109,7 +109,7 @@ class Board:
 			self.board = self.board.copy()
 			self.addWall(wall, True)
 			for ply in self.players:
-				if ply and not self.canReachGoal(ply.location, ply.id): #self.findPathToGoal(ply.location, ply.id) == None:
+				if ply and self.findPathToGoal(ply.location, ply.id) == None: #not self.canReachGoal(ply.location, ply.id):
 					return False
 		finally:
 			# Make sure we put it back
@@ -247,6 +247,9 @@ class Board:
 	#################################################################################################################
 	
 	def canReach(self, loc, atgoal):
+		"""
+		Returns True if it is possible to reach a location where atgoal(location) == True
+		"""
 		visited = set()
 		stack = [loc]
 		while stack:
@@ -260,8 +263,11 @@ class Board:
 				stack.append(j)
 		return False
 	
-	def canReachGoal(self, loc, goalnum):
-		heuristic, atgoal = _goal_settings[goalnum]
+	def canReachGoal(self, loc, plyid):
+		"""
+		Returns True if it is possible to reach player plyid's goal.
+		"""
+		heuristic, atgoal = _goal_settings[plyid]
 		return self.canReach(loc, atgoal)
 	
 	def _bfs(self, start, atgoal):
