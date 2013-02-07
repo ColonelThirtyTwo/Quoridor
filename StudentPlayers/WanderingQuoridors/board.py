@@ -8,6 +8,7 @@ from .wall import Wall
 from .hashableplayermove import HashablePlayerMove
 from Model.interface import BOARD_DIM
 from collections import deque
+from math import sqrt
 
 # Heuristic and isgoal functions for each of the four goal rows
 _goal_settings = [
@@ -200,16 +201,16 @@ class Board:
 		enemyscore = 0
 		for p in self.players:
 			if p:
-				s = len(self.findPathToGoal(p.location, p.id))
+				s = len(self.findPathToGoal(p.location, p.id))-1
 				if p.id == plyid:
-					myscore = s
+					myscore = -s
 				else:
-					enemyscore += s
+					enemyscore += -20/sqrt(s)
 		
 		if len(self.players) > 1:
 			enemyscore = enemyscore / (len(self.players)-1)
 		
-		return enemyscore - myscore
+		return enemyscore + myscore
 	
 	def generateNext(self, plyid):
 		"""
