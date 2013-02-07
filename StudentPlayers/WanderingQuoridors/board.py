@@ -109,7 +109,7 @@ class Board:
 			self.board = self.board.copy()
 			self.addWall(wall, True)
 			for ply in self.players:
-				if ply and self.findPathToGoal(ply.location, ply.id) == None: #self.canReachGoal(ply.location, ply.id): 
+				if ply and not self.canReachGoal(ply.location, ply.id): #self.findPathToGoal(ply.location, ply.id) == None:
 					return False
 		finally:
 			# Make sure we put it back
@@ -246,16 +246,18 @@ class Board:
 	
 	#################################################################################################################
 	
-	def canReach(self, loc, atgoal, visited=None):
-		visited = visited or set()
-		if loc in visited:
-			return False
-		if atgoal(loc):
-			return True
-		visited.add(loc)
-		for i in self.board[loc]:
-			if self.canReach(i, atgoal, visited):
+	def canReach(self, loc, atgoal):
+		visited = set()
+		stack = [loc]
+		while stack:
+			i = stack.pop()
+			if i in visited:
+				continue
+			if atgoal(i):
 				return True
+			visited.add(i)
+			for j in self.board[i]:
+				stack.append(j)
 		return False
 	
 	def canReachGoal(self, loc, goalnum):

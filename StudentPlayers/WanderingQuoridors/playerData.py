@@ -86,7 +86,7 @@ def randomWall(plyid):
 
 class PlayerData:
 	"""
-	A representation of the quoridor board.
+	Stores the AI state.
 	"""
 	
 	def __init__(self, playerId, numWalls, playerLocations):
@@ -104,13 +104,21 @@ class PlayerData:
 		self.me = playerId
 	
 	def applyMove(self, move):
+		"""
+		Notifies the AI of a move
+		"""
 		self.currentboard.applyMove(move)
 	
 	#@profile(immediate=True, sort="time", filename="profile.out")
-	def getMove_alphabeta(self):
+	def getMove(self):
+		"""
+		Computes and returns the move the AI thinks it should make
+		"""
 		bestmove, _ = alphabeta(self.currentboard, 2, self.me)
 		return bestmove
-	getMove = getMove_alphabeta
 	
 	def invalidate(self, plyid):
+		"""
+		Notifies the AI of an invalidated player.
+		"""
 		self.currentboard.invalidate(plyid)
