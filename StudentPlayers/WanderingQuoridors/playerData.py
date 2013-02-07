@@ -65,29 +65,30 @@ def alphabeta(board, depth, plyid, a=-inf, b=inf, curplyid=None):
 	while not board.players[nextid]:
 		nextid = (nextid+1) % len(board.players)
 	
-	treenode = {}
-	
 	if curplyid == plyid:
 		# Max
+		bestmove = None
 		for move in board.generateNext(curplyid):
 			#print("max: examining "+str(move))
-			tree, score = alphabeta(board.copy().applyMove(move), depth-1, plyid, a, b, nextid)
-			
-			treenode[move] = (tree, score)
-			a = max(a, score)
+			_, score = alphabeta(board.copy().applyMove(move), depth-1, plyid, a, b, nextid)
+			if score > a:
+				bestmove = move
+				a = score
 			if b <= a:
 				break
-		return treenode, a
+		return bestmove, a
 	else:
 		# Min
+		bestmove = None
 		for move in board.generateNext(curplyid):
 			#print("min: examining "+str(move))
-			tree, score = alphabeta(board.copy().applyMove(move), depth-1, plyid, a, b, nextid)
-			treenode[move] = (tree, score)
-			b = min(b, score)
+			_, score = alphabeta(board.copy().applyMove(move), depth-1, plyid, a, b, nextid)
+			if score < b:
+				bestmove = move
+				b = score
 			if b <= a:
 				break
-		return treenode, b
+		return bestmove, b
 
 def randomWall(plyid):
 	"""
@@ -128,14 +129,13 @@ class PlayerData:
 	
 	#@profile(immediate=True, sort="time", filename="profile.out")
 	def getMove_alphabeta(self):
-		tree, _ = alphabeta(self.currentboard, 2, self.me)
-		move, _ = max(tree.items(), key=lambda n: n[1][1])
-		return move
+		bestmove, _ = alphabeta(self.currentboard, 2, self.me)
+		return bestmove
 	def getMove_minimax(self):
 		bestmove, score = minimax(self.currentboard, 1, self.me)
 		return bestmove
 		
-	getMove = getMove_minimax
+	getMove = getMove_alphabeta
 	
 	def invalidate(self, plyid):
 		self.currentboard.invalidate(plyid)
