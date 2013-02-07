@@ -27,7 +27,14 @@ def alphabeta(board, depth, plyid, a=-inf, b=inf, curplyid=None):
 		The best PlayerMove object found
 		The score of that move
 	"""
-	curplyid = curplyid or plyid
+	if curplyid is None:
+		curplyid = plyid
+	
+	# Compute next ID
+	nextid = (curplyid+1) % len(board.players)
+	while not board.players[nextid]:
+		nextid = (nextid+1) % len(board.players)
+	#print(depth, curplyid, nextid)
 	
 	if depth <= 0:
 		return board, board.evaluate(plyid)
@@ -39,11 +46,7 @@ def alphabeta(board, depth, plyid, a=-inf, b=inf, curplyid=None):
 		else:
 			return None, -inf
 	
-	# Compute next ID
-	nextid = (curplyid+1) % len(board.players)
-	while not board.players[nextid]:
-		nextid = (nextid+1) % len(board.players)
-	
+	#print(nextid)
 	if curplyid == plyid:
 		# Max
 		bestmove = None
@@ -68,6 +71,19 @@ def alphabeta(board, depth, plyid, a=-inf, b=inf, curplyid=None):
 			if b <= a:
 				break
 		return bestmove, b
+
+def getMoveToGoal(board, plyid):
+	"""
+	Returns a PlayerMove object to move plyid along the shortest path to its goal.
+	"""
+	loc = board.players[plyid].location
+	bestmove, bestlen = None, inf
+	for i in board.getAdjacentHop(loc):
+		path = board.findPathToGoal(i, plyid)
+		if path and len(path) < bestlen:
+			bestmove = i
+			bestlen = len(path)
+	return PlayerMove(plyid+1, True, loc[0], loc[1], bestmove[0], bestmove[1])
 
 def randomWall(plyid):
 	"""
@@ -114,8 +130,11 @@ class PlayerData:
 		"""
 		Computes and returns the move the AI thinks it should make
 		"""
-		bestmove, _ = alphabeta(self.currentboard, 2, self.me)
-		return bestmove
+		if self.currentboard.activeplayers == 1:
+			return getMoveToGoal(self.currentboard, self.me)
+		else:
+			bestmove, _ = alphabeta(self.currentboard, 2, self.me)
+			return bestmove
 	
 	def invalidate(self, plyid):
 		"""

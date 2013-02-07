@@ -51,6 +51,10 @@ class Board:
 	def __init__(self, players, board=None, walls=None):
 		self.players = players
 		self.walls = walls or []
+		self.activeplayers = 0
+		for i in players:
+			if i:
+				self.activeplayers += 1
 		
 		if board:
 			self.board = board
@@ -170,7 +174,7 @@ class Board:
 			self.board[wall.r1+1,wall.c1  ] = self.board[wall.r1+1,wall.c1  ].difference(((wall.r1+1,wall.c1-1),))
 			self.board[wall.r1  ,wall.c1-1] = self.board[wall.r1  ,wall.c1-1].difference(((wall.r1  ,wall.c1  ),))
 			self.board[wall.r1+1,wall.c1-1] = self.board[wall.r1+1,wall.c1-1].difference(((wall.r1+1,wall.c1  ),))
-				
+		
 		if not onlytoboard:
 			self.walls.append(wall)
 			ply = self.players[wall.owner]
@@ -188,7 +192,7 @@ class Board:
 		Otherwise, returns None
 		"""
 		for p in self.players:
-				if _goal_settings[p.id][1](p.location):
+				if p and _goal_settings[p.id][1](p.location):
 					return p
 		return None
 	

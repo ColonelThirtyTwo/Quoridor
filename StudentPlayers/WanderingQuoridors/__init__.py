@@ -145,5 +145,5 @@ def player_invalidated(playerData, playerId):
             this player's updated playerData
     """
     
-    playerData.playerLocations[playerId-1] = False
+    playerData.invalidate(playerId-1)
     return playerData
