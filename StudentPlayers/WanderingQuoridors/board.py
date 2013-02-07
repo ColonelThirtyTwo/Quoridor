@@ -205,6 +205,10 @@ class Board:
 					myscore = s
 				else:
 					enemyscore += s
+		
+		if len(self.players) > 1:
+			enemyscore = enemyscore / (len(self.players)-1)
+		
 		return enemyscore - myscore
 	
 	def generateNext(self, plyid):
