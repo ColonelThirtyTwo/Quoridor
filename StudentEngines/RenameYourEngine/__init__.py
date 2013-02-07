@@ -159,7 +159,7 @@ def initialize_player(engineData, playerNum):
         Parameters
             engineData: the data originally built by this module in init()
                         (used to establish the context of the move)
-            playerNum: the number of the player (in [0 .. n-1] for n players)
+            playerNum: the number of the player (in [1 .. n] for n players)
 
         returns: the engine data, modified
     """
@@ -260,28 +260,32 @@ def exit_due_to_error(message):
 
 def generate_board(engineData):
     """    
-        Part 4: Generate a symmetric board configuration
-        
-        engineData: your engine state
-        
-        moveExecFunction: call with moves
+        Part 4: Generate a symmetric board configuration.
+        A symmetric board is an initial board already containing
+        some walls that looks the same from the perspective of
+        any player's token. This capability is currently used to
+        run tie-breaker games in a tournament.
+
+        Parameters:
+            engineData: your engine state
         
         returns: your engine state
     """
     # Hint: disable AUTO_PLAY while developing this
         
     
-    # numWalls equals the value of the STUDENT_ENGINE_WALLS config parameter
-    # this controls how many PlayerMoves you generate in this function
-    # note that this number should always be even due to the asymmetry of the
-    # game board
+    # Fetch the value of the STUDENT_ENGINE_WALLS config parameter;
+    # It is the number of walls to pre-place, -> per player <- .
+    # The total number of walls you will pre-place is this number
+    # multiplied by the number of players
+
     numWalls = None
     
     # Generate PlayerMoves to be made
     
     # For each move:
-    #     call model.makeMove(playerMove)
-    #     notify players of this move
+    #     Call model.makeMove(playerMove).
+    #     Notify players of this move.
     
     return engineData
     

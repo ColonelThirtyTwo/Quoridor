@@ -5,8 +5,9 @@ Author: Adam Oest
 Date: July, 2012
 """
 
-# If you get this error, either run quoridor.py or create
-# a new file in the same directory as quoridor.py,
+# If you get this error checked for in the code that follows
+# this comment, either run quoridor.py or
+# create a new file in the same directory as quoridor.py,
 # in which you import your module and call your own functions
 # for testing purposes
 if __name__ == "__main__":
@@ -17,26 +18,6 @@ if __name__ == "__main__":
 # Imports the player move class as well as the board size constant
 from Model.interface import PlayerMove, BOARD_DIM
 from .playerData import PlayerData
-
-"""
-    Started file overview:
-        For part 1, you will implement the following functions
-            init
-            last_move
-            get_neighbors
-            get_shortest_path
-            
-        You will also need to define a BFS function elsewhere (i.e. in
-        playerData or in another function) and update playerData to 
-        hold whatever state you need
-        
-        For part 2, you will implement the following functions
-            move
-            
-        You will also need to update your data structures and possibly
-        other functions to support playing 1-player games
-
-"""
 
 def init(logger, playerId, numWalls, playerHomes):
     """
