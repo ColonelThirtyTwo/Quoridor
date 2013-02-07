@@ -72,9 +72,9 @@ class Board:
 			loc: (r,c) location
 		"""
 		for loc2 in self.board[loc]:
-			if self.playerAt(loc2):
+			if self.getPlayerAt(loc2):
 				loc3 = loc2[0]*2-loc[0], loc2[1]*2-loc[1]
-				if loc3 in self.board[loc2] and not self.playerAt(loc3):
+				if loc3 in self.board[loc2] and not self.getPlayerAt(loc3):
 					yield loc3
 				else:
 					for loc4 in self.board[loc2]:
@@ -82,6 +82,11 @@ class Board:
 							yield loc4
 			else:
 				yield loc2
+	
+	def getPlayerAt(self, loc):
+		for i in self.players:
+			if i and i.location == loc:
+				return i
 	
 	def checkWall(self, wall):
 		"""
@@ -103,7 +108,7 @@ class Board:
 			self.board = self.board.copy()
 			self.addWall(wall, True)
 			for ply in self.players:
-				if ply and self.findPathToGoal(ply.location, ply.id) == None:
+				if ply and self.findPathToGoal(ply.location, ply.id) == None: #self.canReachGoal(ply.location, ply.id): 
 					return False
 		finally:
 			# Make sure we put it back
@@ -193,12 +198,13 @@ class Board:
 		# TODO: This can probably be tweaked
 		score = 0
 		for p in self.players:
-			s = len(self.findPathToGoal(p.location, p.id))
-			if p.id == plyid:
-				score -= s
-			else:
-				score += s
-		return s
+			if p:
+				s = len(self.findPathToGoal(p.location, p.id))
+				if p.id == plyid:
+					score -= s
+				else:
+					score += s
+		return score
 	
 	def generateNext(self, plyid):
 		"""
@@ -209,7 +215,7 @@ class Board:
 		
 		# Movement
 		canmove = False
-		for loc in self.board[ply.location]:
+		for loc in self.getAdjacentHop(ply.location):
 			canmove = True
 			yield HashablePlayerMove(ply.id+1, True, ply.location[0], ply.location[1], loc[0], loc[1])
 		
@@ -234,6 +240,22 @@ class Board:
 	
 	#################################################################################################################
 	
+	def canReach(self, loc, atgoal, visited=None):
+		visited = visited or set()
+		if loc in visited:
+			return False
+		if atgoal(loc):
+			return True
+		visited.add(loc)
+		for i in self.board[loc]:
+			if self.canReach(i, atgoal, visited):
+				return True
+		return False
+	
+	def canReachGoal(self, loc, goalnum):
+		heuristic, atgoal = _goal_settings[goalnum]
+		return self.canReach(loc, atgoal)
+	
 	def _bfs(self, start, atgoal):
 		"""
 		Generic BFS Algorithm
@@ -244,6 +266,7 @@ class Board:
 		queue = deque()
 		queue.append(start)
 		closed = {start : None}
+		
 		while queue:
 			current = queue.popleft()
 			if atgoal(current):

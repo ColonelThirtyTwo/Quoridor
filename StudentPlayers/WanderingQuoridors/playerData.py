@@ -9,8 +9,39 @@ from .board import Board, Player
 from .wall import Wall
 from collections import deque
 import random
+from profilehooks import profile
 
 inf = float("inf")
+
+def minimax(board, depth, plyid, curplyid=None):
+	curplyid = curplyid or plyid
+	
+	if depth <= 0 or board.isTerminal():
+		return None, board.evaluate(plyid)
+	
+	# Compute next ID
+	nextid = (curplyid+1) % len(board.players)
+	while not board.players[nextid]:
+		nextid = (nextid+1) % len(board.players)
+	
+	if curplyid == plyid:
+		#max
+		bestmove, bestscore = None, -inf
+		for move in board.generateNext(curplyid):
+			newmove, newscore = minimax(board.copy().applyMove(move),depth-1,plyid,nextid)
+			if newscore > bestscore:
+				bestmove = move
+				bestscore = newscore
+		return bestmove, bestscore
+	else:
+		#min
+		bestmove, bestscore = None, inf
+		for move in board.generateNext(curplyid):
+			newmove, newscore = minimax(board.copy().applyMove(move),depth-1,plyid,nextid)
+			if newscore < bestscore:
+				bestmove = move
+				bestscore = newscore
+		return bestmove, bestscore
 
 def alphabeta(board, depth, plyid, a=-inf, b=inf, curplyid=None):
 	"""
@@ -33,7 +64,6 @@ def alphabeta(board, depth, plyid, a=-inf, b=inf, curplyid=None):
 	nextid = (curplyid+1) % len(board.players)
 	while not board.players[nextid]:
 		nextid = (nextid+1) % len(board.players)
-	#print(board.players, curplyid, nextid)
 	
 	treenode = {}
 	
@@ -42,9 +72,10 @@ def alphabeta(board, depth, plyid, a=-inf, b=inf, curplyid=None):
 		for move in board.generateNext(curplyid):
 			#print("max: examining "+str(move))
 			tree, score = alphabeta(board.copy().applyMove(move), depth-1, plyid, a, b, nextid)
+			
 			treenode[move] = (tree, score)
 			a = max(a, score)
-			if b < a:
+			if b <= a:
 				break
 		return treenode, a
 	else:
@@ -54,7 +85,7 @@ def alphabeta(board, depth, plyid, a=-inf, b=inf, curplyid=None):
 			tree, score = alphabeta(board.copy().applyMove(move), depth-1, plyid, a, b, nextid)
 			treenode[move] = (tree, score)
 			b = min(b, score)
-			if a < b:
+			if b <= a:
 				break
 		return treenode, b
 
@@ -95,10 +126,16 @@ class PlayerData:
 	def applyMove(self, move):
 		self.currentboard.applyMove(move)
 	
-	def getMove(self):
-		tree, _ = alphabeta(self.currentboard, 1, self.me)
-		move, _ = min(tree.items(), key=lambda n: n[1][1])
+	#@profile(immediate=True, sort="time", filename="profile.out")
+	def getMove_alphabeta(self):
+		tree, _ = alphabeta(self.currentboard, 2, self.me)
+		move, _ = max(tree.items(), key=lambda n: n[1][1])
 		return move
+	def getMove_minimax(self):
+		bestmove, score = minimax(self.currentboard, 1, self.me)
+		return bestmove
+		
+	getMove = getMove_minimax
 	
 	def invalidate(self, plyid):
 		self.currentboard.invalidate(plyid)
