@@ -4,7 +4,8 @@ Author: Alex Parrill (amp9612@rit.edu)
 Author: Joseph Moreyn (jbm6331@rit.edu)
 """
 
-from Model.interface import BOARD_DIM, PlayerMove
+from Model.interface import BOARD_DIM
+from .hashableplayermove import HashablePlayerMove as PlayerMove
 
 class Wall:
     """
@@ -112,7 +113,7 @@ class Wall:
         """
         Converts the wall to a PlayerMove object
         """
-        return PlayerMove(self.owner, False, self.r1, self.c1, self.r2, self.c2)
+        return PlayerMove(self.owner+1, False, self.r1, self.c1, self.r2, self.c2)
 
     def __str__(self):
         return "Wall@<%d,%d - %d,%d>" % (self.r1, self.c1, self.r2, self.c2)
