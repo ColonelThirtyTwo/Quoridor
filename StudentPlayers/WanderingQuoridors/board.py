@@ -42,6 +42,11 @@ class Player:
 	def __str__(self):
 		return "Player({0},{1},{2})".format(self.id, self.location, self.walls)
 	__repr__ = __str__
+	
+	def __eq__(self, other):
+		return self.id == other.id and self.location == other.location and self.walls == other.walls
+	def __hash__(self):
+		return hash(self.id) ^ hash(self.location) ^ hash(self.walls)
 
 class Board:
 	"""
@@ -133,6 +138,9 @@ class Board:
 		new.players = [p and p.copy() or p for p in self.players]
 		
 		return new
+	
+	def __hash__(self):
+		return hash(self.walls) ^ hash(self.players)
 	
 	#################################################################################################################
 	
@@ -246,6 +254,22 @@ class Board:
 						canmove = True
 						yield w.toMove()
 
+		if not canmove:
+			yield HashablePlayerMove(ply.id+1, True, ply.location[0], ply.location[1], ply.location[0], ply.location[1])
+	
+	def generateNextMove(self, plyid):
+		"""
+		Returns a generator that yields every possible (Hashable)PlayerMove from this configuration, except walls.
+		
+		Returns a pass HashablePlayerMove if the player cannot move.
+		"""
+		ply = self.players[plyid]
+		
+		# Movement
+		canmove = False
+		for loc in self.getAdjacentHop(ply.location):
+			canmove = True
+			yield HashablePlayerMove(ply.id+1, True, ply.location[0], ply.location[1], loc[0], loc[1])
 		if not canmove:
 			yield HashablePlayerMove(ply.id+1, True, ply.location[0], ply.location[1], ply.location[0], ply.location[1])
 	

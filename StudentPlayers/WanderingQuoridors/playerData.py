@@ -9,11 +9,11 @@ from .board import Board, Player
 from .wall import Wall
 from collections import deque
 import random
-from profilehooks import profile
+
+CHEAP_MIN_ON_4PLAYER = True
 
 inf = float("inf")
-
-def alphabeta(board, depth, plyid, a=-inf, b=inf, curplyid=None):
+def alphabeta(board, depth, plyid, a=-inf, b=inf, curplyid=None, cheapmin=False):
 	"""
 	Generates and runs through a decision tree using minimax and alpha-beta pruning
 	http://en.wikipedia.org/wiki/Minimax and http://en.wikipedia.org/wiki/Alpha-beta_pruning
@@ -23,6 +23,7 @@ def alphabeta(board, depth, plyid, a=-inf, b=inf, curplyid=None):
 		a: Recursive parameter, don't use
 		b: Recursive parameter, don't use
 		curplyid: Recursive parameter, don't use
+		cheapmin: Only compute pawn movements for min player piles. Tremendously speeds up scan, but doesn't consider enemy wall placements.
 	Returns:
 		The best PlayerMove object found
 		The score of that move
@@ -50,7 +51,7 @@ def alphabeta(board, depth, plyid, a=-inf, b=inf, curplyid=None):
 		bestmove = None
 		for move in board.generateNext(curplyid):
 			#print("max: examining "+str(move))
-			_, score = alphabeta(board.copy().applyMove(move), depth-1, plyid, a, b, nextid)
+			_, score = alphabeta(board.copy().applyMove(move), depth-1, plyid, a, b, nextid, cheapmin)
 			if score > a:
 				bestmove = move
 				a = score
@@ -60,28 +61,19 @@ def alphabeta(board, depth, plyid, a=-inf, b=inf, curplyid=None):
 	else:
 		# Min
 		bestmove = None
-		for move in board.generateNext(curplyid):
+		if cheapmin:
+			itr = board.generateNextMove(curplyid)
+		else:
+			itr = board.generateNext(curplyid)
+		for move in itr:
 			#print("min: examining "+str(move))
-			_, score = alphabeta(board.copy().applyMove(move), depth-1, plyid, a, b, nextid)
+			_, score = alphabeta(board.copy().applyMove(move), depth-1, plyid, a, b, nextid, cheapmin)
 			if score < b:
 				bestmove = move
 				b = score
 			if b <= a:
 				break
 		return bestmove, b
-
-def getMoveToGoal(board, plyid):
-	"""
-	Returns a PlayerMove object to move plyid along the shortest path to its goal.
-	"""
-	loc = board.players[plyid].location
-	bestmove, bestlen = None, inf
-	for i in board.getAdjacentHop(loc):
-		path = board.findPathToGoal(i, plyid)
-		if path and len(path) < bestlen:
-			bestmove = i
-			bestlen = len(path)
-	return PlayerMove(plyid+1, True, loc[0], loc[1], bestmove[0], bestmove[1])
 
 def randomWall(plyid):
 	"""
@@ -97,6 +89,30 @@ def randomWall(plyid):
 		end_r = start_r
 		end_c = start_c + 2
 	return Wall(plyid, start_r, start_c, end_r, end_c)
+
+def getMoveToGoal(board, plyid):
+	"""
+	Returns a PlayerMove object to move plyid along the shortest path to its goal.
+	"""
+	loc = board.players[plyid].location
+	bestmove, bestlen = None, inf
+	for i in board.getAdjacentHop(loc):
+		path = board.findPathToGoal(i, plyid)
+		if path and len(path) < bestlen:
+			bestmove = i
+			bestlen = len(path)
+	if bestmove:
+		return PlayerMove(plyid+1, True, loc[0], loc[1], bestmove[0], bestmove[1])
+	
+	if board.players[plyid].walls > 0:
+		# Gotta place a wall
+		while True:
+			w = randomWall(plyid)
+			if board.checkWall(w):
+				return w.toMove()
+	else:
+		# Can pass
+		PlayerMove(plyid+1, True, loc[0], loc[1], loc[0], loc[1])
 
 class PlayerData:
 	"""
@@ -123,6 +139,7 @@ class PlayerData:
 		"""
 		self.currentboard.applyMove(move)
 	
+	#from profilehooks import profile
 	#@profile(immediate=True, sort="time", filename="profile.out")
 	def getMove(self):
 		"""
@@ -131,11 +148,17 @@ class PlayerData:
 		if self.currentboard.activeplayers == 1:
 			return getMoveToGoal(self.currentboard, self.me)
 		else:
-			bestmove, _ = alphabeta(self.currentboard, 2, self.me)
+			if CHEAP_MIN_ON_4PLAYER and self.currentboard.activeplayers > 2:
+				depth = 4
+				cheapmin = True
+			else:
+				depth = 2
+				cheapmin = False
+			bestmove, _ = alphabeta(self.currentboard, depth, self.me, cheapmin=cheapmin)
 			if bestmove:
 				return bestmove
 			else:
-				print("!!! Did not get a move !!!")
+				print("WanderingQuoridors: Failure is probably imminent. Panic now.")
 				return getMoveToGoal(self.currentboard, self.me)
 	
 	def invalidate(self, plyid):
