@@ -45,7 +45,6 @@ def alphabeta(board, depth, plyid, a=-inf, b=inf, curplyid=None, cheapmin=False)
 	while not board.players[nextid]:
 		nextid = (nextid+1) % len(board.players)
 	
-	#print(nextid)
 	if curplyid == plyid:
 		# Max
 		bestmove = None

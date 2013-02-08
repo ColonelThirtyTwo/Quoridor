@@ -87,9 +87,8 @@ class Board:
 				if loc3 in self.board[loc2] and not self.getPlayerAt(loc3):
 					yield loc3
 				else:
-					for loc4 in self.board[loc2]:
-						if loc4 != loc:
-							yield loc4
+					for loc4 in self.board[loc2].difference((loc, loc3)):
+						yield loc4
 			else:
 				yield loc2
 	
