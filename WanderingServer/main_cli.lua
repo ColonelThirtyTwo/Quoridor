@@ -110,6 +110,34 @@ local function processCmd(cmd, args)
 			cgr[adj[i][1]][adj[i][2]] = Utils.textColors.red
 		end
 		ai:getBoard():print(cgr, true)
+	elseif cmd == "path" then
+		local loc1, loc2 = args:match("^([^ ]+) +([^ ]+)$")
+		if not loc1 then
+			print("Invalid coordinates")
+			return
+		end
+		
+		local r1,c1 = parseCoord(loc1)
+		local r2,c2 = parseCoord(loc2)
+		if not r1 or not r2 then
+			print("Invalid coordinates")
+			return
+		end
+		
+		local b = ai:getBoard()
+		local path = b:findPathToLoc(Coord(r1,c1), Coord(r2,c2))
+		if not path then
+			print("No path")
+		else
+			local cgr = colorgrid()
+			for i=1,#path do
+				local r,c = unCoord(path[i])
+				print(i, r,c)
+				assert(b:validCoord(r,c))
+				cgr[r][c] = Utils.textColors.red
+			end
+			b:print(cgr)
+		end	
 	else
 		print("Unknown command")
 	end

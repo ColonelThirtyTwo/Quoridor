@@ -23,8 +23,9 @@ function Utils.arrayCopy(a1, a2)
 end
 
 function Utils.arrayReverse(arr)
-	for i=1,#arr/2 do
-		arr[i], arr[#arr-i+1] = arr[#arr-i+1], arr[i]
+	local l = #arr
+	for i=1,floor(l/2) do
+		arr[i], arr[l-i+1] = arr[l-i+1], arr[i]
 	end
 	return arr
 end

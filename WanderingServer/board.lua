@@ -50,7 +50,7 @@ local goal_atgoals = {
 		local r,c = unCoord(d)
 		return c == Board.SIZE-1
 	end,
-	[3] = function(d)
+	[4] = function(d)
 		local r,c = unCoord(d)
 		return c == 0
 	end,
@@ -116,6 +116,11 @@ function Board:getNeighbor(coord, i)
 	if adj[i] then
 		return Coord(r+adj[i][1], c+adj[i][2])
 	end
+end
+
+function Board:validCoord(r,c)
+	if not c then r,c = unCoord(r) end
+	return r >= 0 and r < self.SIZE and c >= 0 and c < self.SIZE
 end
 
 function Board:copy()
@@ -184,7 +189,7 @@ end
 function Board:_bfs(start, atgoal, canreach)
 	local queue = Queue:new()
 	queue:add(start)
-	local closed = {}
+	local closed = {[start] = false}
 	
 	while not queue:empty() do
 		local current = queue:poll()
@@ -205,7 +210,7 @@ function Board:_bfs(start, atgoal, canreach)
 		for i=1,4 do
 			local v = self:getNeighbor(current, i)
 			if not v then break end
-			if not closed[v] then
+			if closed[v] == nil then
 				closed[v] = current
 				queue:add(v)
 			end
