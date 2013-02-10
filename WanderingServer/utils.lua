@@ -86,7 +86,7 @@ end
 
 -- ------------------------------------------------------------------------------------
 
-require "windows.wtypes"
+require "WTypes"
 ffi.cdef[[
 typedef struct {
 	short x,y;

@@ -8,6 +8,7 @@ Author: Joseph Moreyn (jbm6331@rit.edu)
 # Imports the player move class as well as the board size constant
 from Model.interface import PlayerMove, BOARD_DIM
 from .playerData import PlayerData, Wall
+from .remoteai import RemoteAI
 
 def init(logger, playerId, numWalls, playerHomes):
     """
@@ -37,7 +38,10 @@ def init(logger, playerId, numWalls, playerHomes):
             a PlayerData object containing all of this player module's data
     """
     
-    return PlayerData(playerId-1, numWalls, list(playerHomes))
+    #return PlayerData(playerId-1, numWalls, list(playerHomes))
+    r = RemoteAI("localhost")
+    r.connect(playerId, numWalls, playerHomes)
+    return r
 
 def last_move(playerData, move):
     """
@@ -62,7 +66,8 @@ def last_move(playerData, move):
         returns:
             this player module's updated (playerData) data structure
     """
-    playerData.applyMove(move)
+    #playerData.applyMove(move)
+    playerData.sendMove(move)
     return playerData
 
 def get_neighbors(playerData, r, c):
@@ -85,7 +90,8 @@ def get_neighbors(playerData, r, c):
             away.
     """
     
-    return [x for x in playerData.currentboard.board[r,c]]
+    #return [x for x in playerData.currentboard.board[r,c]]
+    return playerData.getAdjacent(r,c)
 
 def get_shortest_path(playerData, r1, c1, r2, c2):
     """
@@ -110,7 +116,8 @@ def get_shortest_path(playerData, r1, c1, r2, c2):
             If there is no path, an empty list, [], should be returned.
     """
     
-    return playerData.currentboard.findPathToLoc((r1,c1), (r2,c2)) or []
+    #return playerData.currentboard.findPathToLoc((r1,c1), (r2,c2)) or []
+    return playerData.getPath(r1,c1,r2,c2)
 
 def move(playerData):
     """
