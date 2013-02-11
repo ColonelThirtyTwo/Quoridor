@@ -156,12 +156,10 @@ function Board:getAdjHop(loc1,c)
 				if r3 and not self:getPlayerAt(r3,c3) then
 					tinsert(t, Coord(r3,c3))
 				else
-					print("+",r2,c2)
-					local loc3 = Coord(r3,c3)
+					local loc3 = r3 and Coord(r3,c3)
 					for j=1,4 do
 						local loc4 = self:getNeighbor(loc2, j)
 						if not loc4 then break end
-						print("-",unCoord(loc4))
 						if loc4 ~= loc3 and loc4 ~= loc1 then
 							tinsert(t, loc4)
 						end
@@ -297,6 +295,8 @@ function Board:evaluate(plyid)
 end
 
 local function boardNextMoves(self, plyid)
+	coroutine.yield()
+	
 	local canmove = false
 	local p = self.players[plyid]
 	local t = self:getAdjHop(Coord(p.r, p.c))
@@ -333,8 +333,8 @@ end
 
 function Board:nextMoves(plyid)
 	assert(plyid >= 1 and plyid <= #self.players, plyid)
-	local c = coroutine.wrap(boardNextMoves)
-	--local c = Utils.coroutineWrapDebug(boardNextMoves)
+	--local c = coroutine.wrap(boardNextMoves)
+	local c = Utils.coroutineWrapDebug(boardNextMoves)
 	c(self, plyid)
 	return c
 end
