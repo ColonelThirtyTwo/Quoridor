@@ -7,7 +7,7 @@ Author: Joseph Moreyn (jbm6331@rit.edu)
 from Model.interface import BOARD_DIM, PlayerMove
 from .board import Board, Player
 from .wall import Wall
-from collections import deque
+from .remoteai import RemoteAI
 import random
 
 CHEAP_MIN_ON_4PLAYER = True

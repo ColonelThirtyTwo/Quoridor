@@ -152,5 +152,6 @@ def player_invalidated(playerData, playerId):
             this player's updated playerData
     """
     
-    playerData.invalidate(playerId-1)
+    #playerData.invalidate(playerId-1)
+    playerData.sendInvalidate(playerId)
     return playerData

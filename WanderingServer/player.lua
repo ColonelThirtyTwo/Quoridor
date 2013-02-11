@@ -3,23 +3,23 @@ local ffi = require "ffi"
 
 local Player = {}
 Player.__index = Player
-
-function Player:new(id, r, c, walls, valid)
-	return setmetatable({
-		id = id,
-		r = r, c = c,
-		walls = walls,
-		valid = valid,
-	}, self)
-end
+local Player_typ = ffi.typeof[[struct{
+	int id;
+	int r,c;
+	int walls;
+	bool valid;
+}]]
 
 function Player:copy()
-	return setmetatable({
-		id = self.id,
-		pos = self.pos,
-		walls = self.walls,
-		valid = self.valid,
-	}, getmetatable(self))
+	return Player_typ(self)
 end
 
-return Player
+function Player:__tostring()
+	if self.valid then
+		return string.format("Player%d@(%d,%d)(walls:%d)", self.id, self.r, self.c, self.walls)
+	else
+		return string.format("Player%d(invalid)", self.id)
+	end
+end
+
+return ffi.metatype(Player_typ, Player)

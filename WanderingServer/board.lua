@@ -11,12 +11,16 @@ Board.SIZE = 9
 local Utils = require "utils"
 local Queue = require "queue"
 local Coord, unCoord = Utils.Coord, Utils.unCoord
+local Wall = require "wall"
+local Move = require "move"
 
 local grid = ffi.typeof("short[9][9]")
 local LEFT  = bit.lshift(1,0)
 local RIGHT = bit.lshift(1,1)
 local UP    = bit.lshift(1,2)
 local DOWN  = bit.lshift(1,3)
+Board.LEFT, Board.RIGHT, Board.UP, Board.DOWN = LEFT, RIGHT, UP, DOWN
+local directions = {LEFT, RIGHT, UP, DOWN}
 local bits2adj = {}
 do
 	for i=0,bit.bor(LEFT, RIGHT, UP, DOWN) do
@@ -106,10 +110,6 @@ function Board:set(r,c,v)
 	self.grid[r][c] = v
 end
 
-function Board:getAdjacent(coord)
-	return bits2adj[self[coord]]
-end
-
 function Board:getNeighbor(coord, i)
 	local r,c = unCoord(coord)
 	local adj = bits2adj[self:get(r,c)]
@@ -118,15 +118,70 @@ function Board:getNeighbor(coord, i)
 	end
 end
 
+function Board:getPlayerAt(r,c)
+	if not c then r,c = unCoord(r) end
+	for i=1,#self.players do
+		local p = self.players[i]
+		if p.valid and p.r == r and p.c == c then
+			return p
+		end
+	end
+end
+
+function Board:moveInDir(r,c,dir)
+	if not dir then
+		dir = c
+		r,c = unCoord(r)
+	end
+	assert(self:validCoord(r,c))
+	local b = self.grid[r][c]
+	if bit.band(b, dir) ~= 0 then
+		return r+bits2adj[dir][1][1], c+bits2adj[dir][1][2]
+	end
+end
+
+function Board:getAdjHop(loc1,c)
+	if c then loc1 = Coord(loc1, c) end
+	-- Hnng ugly
+	local t = {}
+	for i=1,#directions do
+		local d = directions[i]
+		local r2,c2 = self:moveInDir(loc1, d)
+		if r2 then
+			local loc2 = Coord(r2,c2)
+			if self:getPlayerAt(loc2) then
+				local r3,c3 = self:moveInDir(r2,c2, d)
+				if r3 and not self:getPlayerAt(r3,c3) then
+					table.insert(t, Coord(r3,c3))
+				else
+					print("+",r2,c2)
+					local loc3 = Coord(r3,c3)
+					for j=1,4 do
+						local loc4 = self:getNeighbor(loc2, j)
+						if not loc4 then break end
+						print("-",unCoord(loc4))
+						if loc4 ~= loc3 and loc4 ~= loc1 then
+							table.insert(t, loc4)
+						end
+					end
+				end
+			else
+				table.insert(t, loc2)
+			end
+		end
+	end
+	return t
+end
+
 function Board:validCoord(r,c)
 	if not c then r,c = unCoord(r) end
 	return r >= 0 and r < self.SIZE and c >= 0 and c < self.SIZE
 end
 
 function Board:copy()
-	local b = setmetatable({},self)
+	local b = setmetatable({},Board)
 	b.players = {}
-	for i=1,#self.players do b.players[i] = self.players[i].copy() end
+	for i=1,#self.players do b.players[i] = self.players[i]:copy() end
 	b.walls = Utils.arrayCopy(self.walls)
 	b.grid = ffi.new(grid, self.grid)
 	return b
@@ -152,6 +207,13 @@ function Board:checkWall(wall)
 	end
 	self.grid = oldgrid
 	return true
+end
+
+function Board:nextPly(plyid)
+	repeat
+		plyid = (plyid % #self.players) + 1
+	until self.players[plyid].valid
+	return plyid
 end
 
 -- ------------------------------------------------------------------------------------
@@ -182,6 +244,98 @@ end
 
 function Board:invalidate(plyid)
 	self.players[plyid].valid = false
+end
+
+function Board:applyMove(m)
+	if ffi.istype(Move, m) then
+		self:updatePlayerLocation(m.plyid, m.r, m.c)
+	elseif ffi.istype(Wall, m) then
+		self:addWall(m)
+	else
+		error("Unknown move: "..tostring(m),2)
+	end
+	return self
+end
+
+-- ------------------------------------------------------------------------------------
+
+function Board:isTerminal()
+	for i=1,#self.players do
+		local p = self.players[i]
+		if p.valid and goal_atgoals[i](Coord(p.r, p.c)) then
+			return p
+		end
+	end
+end
+
+function Board:evaluate(plyid)
+	local myscore = 0
+	local enemyscore = 0
+	local activeEnemies = 0
+	
+	for i=1,#self.players do
+		local p = self.players[i]
+		if p.valid then
+			local s = #self:findPathToGoal(Coord(p.r,p.c), i)-1
+			if i == plyid then
+				myscore = -s
+			else
+				activeEnemies = activeEnemies + 1
+				enemyscore = enemyscore - 20 / math.sqrt(s)
+			end
+		end
+	end
+		
+	if activeEnemies == 0 then
+		return myscore
+	else
+		return myscore + enemyscore / activeEnemies
+	end
+end
+
+local function boardNextMoves(self, plyid)
+	coroutine.yield()
+	
+	local canmove = false
+	local p = self.players[plyid]
+	local t = self:getAdjHop(Coord(p.r, p.c))
+	for i=1,#t do
+		canmove = true
+		coroutine.yield(Move(plyid, p.r, p.c, unCoord(t[i])))
+	end
+	
+	if p.walls > 0 then
+		for c=1,self.SIZE-1 do
+			for r=0,self.SIZE-2 do
+				w = Wall(plyid, r, c, r+2, c)
+				if self:checkWall(w) then
+					canmove = true
+					coroutine.yield(w)
+				end
+			end
+		end
+		for r=1,self.SIZE-1 do
+			for c=0,self.SIZE-2 do
+				w = Wall(plyid, r, c, r, c+2)
+				if self:checkWall(w) then
+					canmove = true
+					coroutine.yield(w)
+				end
+			end
+		end
+	end
+	
+	if not canmove then
+		coroutine.yield(Coord(p.r, p.c))
+	end
+end
+
+function Board:nextMoves(plyid)
+	assert(plyid >= 1 and plyid <= #self.players, plyid)
+	--local c = coroutine.wrap(boardNextMoves)
+	local c = Utils.coroutineWrapDebug(boardNextMoves)
+	c(self, plyid)
+	return c
 end
 
 -- ------------------------------------------------------------------------------------

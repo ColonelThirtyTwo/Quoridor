@@ -6,9 +6,29 @@ local abs = math.abs
 
 local Utils = {}
 
-function printTable(t)
+function printTable(t, depth, tabs)
+	depth = depth or 3
+	if depth <= 0 then return end
+	tabs = tabs or 0
+	local tstr = string.rep("\t", tabs)
+	io.write(tstr,"{\n")
 	for k,v in pairs(t) do
-		print(k,v)
+		print(tstr,k,v)
+		if type(v) == "table" then
+			printTable(v, depth-1, tabs+1)
+		end
+	end
+	io.write(tstr,"}\n")
+end
+
+function Utils.coroutineWrapDebug(f)
+	local r = coroutine.create(f)
+	return function(...)
+		local ok, a, b, c, d = coroutine.resume(r, ...)
+		if not ok then
+			error(debug.traceback(r,a,0),2)
+		end
+		return a,b,c,d
 	end
 end
 
@@ -17,7 +37,7 @@ end
 function Utils.arrayCopy(a1, a2)
 	a2 = a2 or {}
 	for i=1,#a1 do
-		a2[i] = a1
+		a2[i] = a1[i]
 	end
 	return a2
 end

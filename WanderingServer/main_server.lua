@@ -5,8 +5,10 @@ local oldrequrie = require
 
 local ffi = require "ffi"
 local SocketUtils = require "SocketUtils"
+local Board = require "board"
 local AI = require "ai"
 local Wall = require "wall"
+local Move = require "move"
 local Utils = require "utils"
 local Coord, unCoord = Utils.Coord, Utils.unCoord
 
@@ -36,6 +38,10 @@ local function writeAck(socket)
 end
 
 local function processCmd(socket, ai, cmd, args)
+	
+	-- ------------------------------------------------------------------------------------
+	-- Updates
+	
 	if cmd == "m" then
 		local id, r, c = args:match("^(%d+) (%d+),(%d)$")
 		if not id then
@@ -73,7 +79,25 @@ local function processCmd(socket, ai, cmd, args)
 		printf("Invalidate: %d", id)
 		ai:notifyInvalidate(id)
 		writeAck(socket)
-		
+	
+	-- ------------------------------------------------------------------------------------
+	-- Get
+	
+	elseif cmd == "g" then
+		print("Generating move...")
+		local m = ai:getMove()
+		if ffi.istype(Move, m) then
+			print("Got move: ")
+			write(socket, string.format("m %d,%d %d,%d\n", m.prevr, m.prevc, m.r, m.c))
+		elseif ffi.istype(Wall, m) then
+			write(socket, string.format("w %d,%d %d,%d\n", m.r1,m.c1, m.r2,m.c2))
+		else
+			error("Got bad move object from ai:getMove(): "..tostring(m))
+		end
+	
+	-- ------------------------------------------------------------------------------------
+	-- Part 1 Support
+	
 	elseif cmd == "adj" then
 		local r,c = args:match("^(%d+),(%d)$")
 		if not r then
@@ -105,7 +129,9 @@ local function processCmd(socket, ai, cmd, args)
 		end
 		write(socket, table.concat(path, " "))
 		write(socket, "\n")
-		
+	
+	-- ------------------------------------------------------------------------------------
+	
 	else
 		print("Unknown command:", cmd)
 		return true
@@ -147,7 +173,7 @@ local function main(cl_socket)
 		end
 		writeAck(cl_socket)
 		
-		ai = AI:new(me, walls, locations)
+		ai = AI:new(tonumber(me), tonumber(walls), locations)
 	end
 	
 	while true do
