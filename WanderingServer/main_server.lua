@@ -184,14 +184,16 @@ local function main(cl_socket)
 				error(err)
 			end
 			print("Connection closed")
-			return
+			break
 		end
 		
 		local cmd, args = cmdstr:match("^([^ ]+) ?(.-)$")
 		if processCmd(cl_socket, ai, cmd, args) then
-			return
+			print("Connection terminated due to protocol errors")
+			break
 		end
 	end
+	print(string.rep("-", 60))
 end
 
 local function xpcall_hook(err)
@@ -206,7 +208,7 @@ while true do
 	local ok, err = xpcall(main, xpcall_hook, cl_socket)
 	cl_socket:ForceClose()
 	if not ok then error(err,0) end
-	break
+	--break
 end
 sv_socket:ForceClose()
 sv_socket = nil

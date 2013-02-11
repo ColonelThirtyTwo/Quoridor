@@ -112,6 +112,16 @@ function Board:set(r,c,v)
 	self.grid[r][c] = v
 end
 
+function Board:numActivePlayers()
+	local c = 0
+	for i=1,#self.players do
+		if self.players[i].valid then
+			c = c + 1
+		end
+	end
+	return c
+end
+
 function Board:getNeighbor(coord, i)
 	local r,c = unCoord(coord)
 	local adj = bits2adj[self:get(r,c)]

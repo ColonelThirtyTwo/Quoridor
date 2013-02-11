@@ -32,6 +32,29 @@ function Utils.coroutineWrapDebug(f)
 	end
 end
 
+ffi.cdef[[
+ULONGLONG GetTickCount64();
+BOOL QueryPerformanceFrequency(int64_t *lpFrequency);
+BOOL QueryPerformanceCounter(int64_t *lpPerformanceCount);
+]]
+local longbuf = ffi.new("int64_t[1]")
+local C = ffi.C
+C.QueryPerformanceFrequency(longbuf)
+if tonumber(longbuf[0]) == 0 then
+	local perfLongInt = ffi.new("ULONGLONG[1]")
+	function Utils.getTime()
+		C.GetTickCount64(perfLongInt)
+		return tonumber(perfLongInt[0])/1000
+	end
+else
+	local perfCounterFreq = tonumber(longbuf[0])
+	local perfLongInt = longbuf
+	function Utils.getTime()
+		C.QueryPerformanceCounter(perfLongInt)
+		return tonumber(perfLongInt[0])/perfCounterFreq
+	end
+end
+
 -- ------------------------------------------------------------------------------------
 
 function Utils.arrayCopy(a1, a2)

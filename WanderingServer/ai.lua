@@ -52,7 +52,22 @@ end
 
 -- ------------------------------------------------------------------------------------
 
-local function alphabeta(board, depth, maxid, a, b, plyid)
+local getTime = Utils.getTime
+local OUT_OF_TIME = {}
+
+local function xpcall_hook(err)
+	if err ~= OUT_OF_TIME then
+		return debug.traceback(err,2)
+	else
+		return err
+	end
+end
+
+local function alphabeta(board, depth, maxid, a, b, plyid, finishby)
+	if getTime() > finishby then
+		error(OUT_OF_TIME, 0)
+	end
+	
 	local p = board:isTerminal()
 	if p then
 		if p.id == maxid then
@@ -71,7 +86,7 @@ local function alphabeta(board, depth, maxid, a, b, plyid)
 	if plyid == maxid then
 		local bestmove = nil
 		for move in board:nextMoves(plyid) do
-			local _, score = alphabeta(board:copy():applyMove(move), depth-1, maxid, a, b, nextid)
+			local _, score = alphabeta(board:copy():applyMove(move), depth-1, maxid, a, b, nextid, finishby)
 			if score > a then
 				bestmove = move
 				a = score
@@ -84,7 +99,7 @@ local function alphabeta(board, depth, maxid, a, b, plyid)
 	else
 		local bestmove = nil
 		for move in board:nextMoves(plyid) do
-			local _, score = alphabeta(board:copy():applyMove(move), depth-1, maxid, a, b, nextid)
+			local _, score = alphabeta(board:copy():applyMove(move), depth-1, maxid, a, b, nextid, finishby)
 			if score < b then
 				bestmove = move
 				b = score
@@ -98,11 +113,32 @@ local function alphabeta(board, depth, maxid, a, b, plyid)
 end
 
 function AI:getMove()
-	local start = os.clock()
-	local move, _ = alphabeta(self.currentboard, 2, self.me, -math.huge, math.huge, self.me)
-	local dt = os.clock()-start
-	print("Generated move in",dt,"seconds")
-	return move
+	if self.currentboard:numActivePlayers() == 1 then
+		-- Nothing that complicated for a 1P game
+		local move, _ = alphabeta(self.currentboard, 1, self.me, -math.huge, math.huge, self.me, math.huge)
+		return move
+	end
+	
+	local start = getTime()
+	local finishby = start+8
+	local depth = 1
+	local bestmove = nil
+	while true do
+		local ok, move = xpcall(alphabeta, xpcall_hook, self.currentboard, depth, self.me, -math.huge, math.huge, self.me, finishby)
+		-- alphabeta(board, depth, maxid, a, b, plyid, finishby)
+		if not ok then
+			if move == OUT_OF_TIME then
+				break
+			else
+				error(move,0)
+			end
+		end
+		bestmove = move
+		io.write("\tAlphabeta d=", depth, " finished in ", (getTime()-start), " seconds\n")
+		depth = depth + 1
+	end
+	io.write("\tMax time elapsed\n")
+	return bestmove
 end
 
 -- ------------------------------------------------------------------------------------
