@@ -2,6 +2,7 @@
 import socket
 #import threading
 from .hashableplayermove import HashablePlayerMove
+import atexit
 
 PORT = 51894
 
@@ -41,7 +42,8 @@ class RemoteAI:
 	
 	def connect(self, me, walls, locations):
 		self.socket = socket.create_connection((self.host,PORT))
-		self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+		#self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+		atexit.register(self.close)
 		self.me = me
 		
 		self._send("{} {} ".format(me, walls))
@@ -99,5 +101,6 @@ class RemoteAI:
 	
 	def close(self):
 		if self.socket:
+			self.socket.shutdown(socket.SHUT_RDWR)
 			self.socket.close()
 			self.socket = None

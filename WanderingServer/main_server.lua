@@ -30,7 +30,10 @@ local function readLine(socket)
 end
 
 local function write(socket, str)
-	SocketUtils.WriteN(socket, str, #str)
+	local nchars, err = SocketUtils.WriteN(socket, str, #str)
+	if nchars ~= #str then
+		print("! Didn't write enough data into socket !")
+	end
 end
 
 local function writeAck(socket)
@@ -200,15 +203,17 @@ local function xpcall_hook(err)
 	return debug.traceback(err, 2)
 end
 
-local sv_socket, err = SocketUtils.CreateTcpServerSocket({port = PORT, backlog=1, nonblocking=false, nodelay=true})
+local sv_socket, err = SocketUtils.CreateTcpServerSocket({port = PORT, backlog=1, nonblocking=false, nodelay=false})
 if not sv_socket then error(err) end
 print("Server starting")
 while true do
 	local cl_socket = assert(sv_socket:Accept())
 	local ok, err = xpcall(main, xpcall_hook, cl_socket)
-	cl_socket:ForceClose()
+	assert(cl_socket:CloseDown())
+	ffi.gc(cl_socket, nil)
 	if not ok then error(err,0) end
 	--break
 end
-sv_socket:ForceClose()
+sv_socket:CloseDown()
+ffi.gc(sv_socket, nil)
 sv_socket = nil
