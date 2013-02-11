@@ -59,20 +59,20 @@ local function alphabeta(board, depth, maxid, a, b, plyid)
 	local p = board:isTerminal()
 	if p then
 		if p.id == maxid then
-			return nil, math.huge
+			return nil, 5000+depth
 		else
-			return nil, -math.huge
+			return nil, -5000-depth
 		end
 	end
 	
 	if depth <= 0 then
-		return nil, board:evaluate(maxid)
+		return nil, board:evaluate(maxid), depth
 	end
 	
 	local nextid = board:nextPly(plyid)
 	
 	if plyid == maxid then
-		local bestmove = nil
+		local bestmove, bestdepth = nil, math.huge
 		for move in board:nextMoves(plyid) do
 			local _, score = alphabeta(board:copy():applyMove(move), depth-1, maxid, a, b, nextid)
 			if score > a then
@@ -101,10 +101,10 @@ local function alphabeta(board, depth, maxid, a, b, plyid)
 end
 
 function AI:getMove()
-	local start = os.clock()
-	local move, _ = alphabeta(self.currentboard, 1, self.me, -math.huge, math.huge, self.me)
-	local dt = os.clock()-start
-	print("Generated move in",dt,"seconds")
+	--local start = os.clock()
+	local move, _ = alphabeta(self.currentboard, 2, self.me, -math.huge, math.huge, self.me)
+	--local dt = os.clock()-start
+	--print("Generated move in",dt,"seconds")
 	return move
 end
 
