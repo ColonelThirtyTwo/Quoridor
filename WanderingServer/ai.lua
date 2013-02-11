@@ -31,21 +31,18 @@ end
 function AI:notifyMove(plyid, r,c)
 	self.currentboard:updatePlayerLocation(plyid, r, c)
 	self.currentply = self.currentboard:nextPly(plyid)
-	print(plyid, self.currentply)
 end
 
 function AI:notifyWall(wall)
 	assert(self.currentboard:checkWall(wall))
 	self.currentboard:addWall(wall)
 	self.currentply = self.currentboard:nextPly(wall.owner)
-	print(wall.owner, self.currentply)
 end
 
 function AI:notifyInvalidate(plyid)
 	self.currentboard:invalidate(plyid)
 	if plyid == self.currentply then
 		self.currentply = self.currentboard:nextPly(self.currentply)
-		print(plyid, self.currentply)
 	end
 end
 
@@ -72,7 +69,7 @@ local function alphabeta(board, depth, maxid, a, b, plyid)
 	local nextid = board:nextPly(plyid)
 	
 	if plyid == maxid then
-		local bestmove, bestdepth = nil, math.huge
+		local bestmove = nil
 		for move in board:nextMoves(plyid) do
 			local _, score = alphabeta(board:copy():applyMove(move), depth-1, maxid, a, b, nextid)
 			if score > a then
@@ -101,10 +98,10 @@ local function alphabeta(board, depth, maxid, a, b, plyid)
 end
 
 function AI:getMove()
-	--local start = os.clock()
+	local start = os.clock()
 	local move, _ = alphabeta(self.currentboard, 2, self.me, -math.huge, math.huge, self.me)
-	--local dt = os.clock()-start
-	--print("Generated move in",dt,"seconds")
+	local dt = os.clock()-start
+	print("Generated move in",dt,"seconds")
 	return move
 end
 

@@ -87,9 +87,10 @@ local function processCmd(socket, ai, cmd, args)
 		print("Generating move...")
 		local m = ai:getMove()
 		if ffi.istype(Move, m) then
-			print("Got move: ")
+			print("Got move:", m)
 			write(socket, string.format("m %d,%d %d,%d\n", m.prevr, m.prevc, m.r, m.c))
 		elseif ffi.istype(Wall, m) then
+			print("Got wall:", m)
 			write(socket, string.format("w %d,%d %d,%d\n", m.r1,m.c1, m.r2,m.c2))
 		else
 			error("Got bad move object from ai:getMove(): "..tostring(m))
