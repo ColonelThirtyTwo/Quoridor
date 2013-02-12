@@ -40,6 +40,13 @@ local function writeAck(socket)
 	write(socket, "ack\n")
 end
 
+local colorgrid = Utils.ColorGrid()
+local function printBoard(board)
+	ffi.fill(colorgrid, ffi.sizeof(Utils.ColorGrid))
+	Utils.colorPlayers(board, colorgrid)
+	board:print(colorgrid)
+end
+
 local function processCmd(socket, ai, cmd, args)
 	
 	-- ------------------------------------------------------------------------------------
@@ -58,6 +65,8 @@ local function processCmd(socket, ai, cmd, args)
 		ai:notifyMove(id, r, c)
 		writeAck(socket)
 		
+		printBoard(ai:getBoard())
+		
 	elseif cmd == "w" then
 		local id, r1,c1, r2,c2 = args:match("^(%d+) (%d+),(%d) (%d+),(%d)$")
 		if not id then
@@ -72,6 +81,8 @@ local function processCmd(socket, ai, cmd, args)
 		ai:notifyWall(w)
 		writeAck(socket)
 		
+		printBoard(ai:getBoard())
+		
 	elseif cmd == "i" then
 		local id = tonumber(args)
 		if not id then
@@ -82,6 +93,8 @@ local function processCmd(socket, ai, cmd, args)
 		printf("Invalidate: %d", id)
 		ai:notifyInvalidate(id)
 		writeAck(socket)
+		
+		printBoard(ai:getBoard())
 	
 	-- ------------------------------------------------------------------------------------
 	-- Get
@@ -90,10 +103,10 @@ local function processCmd(socket, ai, cmd, args)
 		print("Generating move...")
 		local m = ai:getMove()
 		if ffi.istype(Move, m) then
-			print("Got move:", m)
+			print("\tGot move:", m)
 			write(socket, string.format("m %d,%d %d,%d\n", m.prevr, m.prevc, m.r, m.c))
 		elseif ffi.istype(Wall, m) then
-			print("Got wall:", m)
+			print("\tGot wall:", m)
 			write(socket, string.format("w %d,%d %d,%d\n", m.r1,m.c1, m.r2,m.c2))
 		else
 			error("Got bad move object from ai:getMove(): "..tostring(m))

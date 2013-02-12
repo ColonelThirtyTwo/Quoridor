@@ -172,4 +172,23 @@ function Utils.writeColored(str, c)
 	ffi.C.SetConsoleTextAttribute(h, colorbuf.wAttributes)
 end
 
+local colorgrid = ffi.typeof("int[9][9]")
+Utils.ColorGrid = colorgrid
+
+local playercolors = {
+	[1] = bit.bor(Utils.textColors.red, Utils.textColors.intensity),
+	[2] = bit.bor(Utils.textColors.blue, Utils.textColors.intensity),
+	[3] = bit.bor(Utils.textColors.green, Utils.textColors.intensity),
+	[4] = bit.bor(Utils.textColors.red, Utils.textColors.green, Utils.textColors.intensity),
+}
+
+function Utils.colorPlayers(board, cgr)
+	for i=1,#board.players do
+		local p = board.players[i]
+		if p.valid then
+			cgr[p.r][p.c] = playercolors[i]
+		end
+	end
+end
+
 return Utils
