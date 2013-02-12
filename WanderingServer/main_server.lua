@@ -209,6 +209,7 @@ local function main(cl_socket)
 			break
 		end
 	end
+	ai:shutdown()
 	print(string.rep("-", 60))
 end
 
@@ -224,7 +225,9 @@ while true do
 	local ok, err = xpcall(main, xpcall_hook, cl_socket)
 	assert(cl_socket:CloseDown())
 	ffi.gc(cl_socket, nil)
-	if not ok then error(err,0) end
+	if not ok then
+		print(err)
+	end
 	--break
 end
 sv_socket:CloseDown()

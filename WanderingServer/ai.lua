@@ -120,6 +120,9 @@ local function alphabeta(node, depth, maxid, a, b, plyid, finishby)
 	return bestmove, returnscore
 end
 
+--local profi = require "ProFi"
+--profi:setGetTimeMethod(Utils.getTime)
+
 function AI:getMove()
 	
 	--if self.currentboard:numActivePlayers() == 1 then
@@ -127,6 +130,8 @@ function AI:getMove()
 	--	local move, _ = alphabeta(self.currentboard, 1, self.me, -math.huge, math.huge, self.me, math.huge)
 	--	return move
 	--end
+	
+	--profi:start()
 	
 	local start = getTime()
 	local finishby = start+8
@@ -148,7 +153,14 @@ function AI:getMove()
 		depth = depth + 1
 	end
 	io.write("\tMax time elapsed\n")
+	
+	--profi:stop()
+	
 	return bestmove
+end
+
+function AI:shutdown()
+	--profi:writeReport("profile.txt")
 end
 
 -- ------------------------------------------------------------------------------------
