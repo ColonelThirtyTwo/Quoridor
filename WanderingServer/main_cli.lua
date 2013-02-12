@@ -9,8 +9,6 @@ local Coord, unCoord = Utils.Coord, Utils.unCoord
 
 local colorgrid = require("ffi").typeof("int[9][9]")
 
-local ai
-
 local function parseCoord(str)
 	local r, c = str:match("^(%d+),(%d+)$")
 	r,c = tonumber(r), tonumber(c)
@@ -40,7 +38,7 @@ commands["q"] = function(args)
 	return true
 end
 commands["quit"] = commands["q"]
-commands["p"] = function(args)
+commands["p"] = function(ai, args)
 	local r,c
 	if tonumber(args) then
 		local p = ai:getBoard().players[tonumber(args)]
@@ -66,7 +64,7 @@ commands["p"] = function(args)
 end
 commands["print"] = commands["p"]
 
-commands["w"] = function(args)
+commands["w"] = function(ai, args)
 	local owner, loc1, loc2 = args:match("^(%d+) +([^ ]+) +([^ ]+)$")
 	owner = tonumber(owner)
 	if not owner then
@@ -88,7 +86,7 @@ commands["w"] = function(args)
 end
 commands["wall"] = commands["w"]
 
-commands["m"] = function(args)
+commands["m"] = function(ai, args)
 	local id, loc = args:match("^(%d+) +([^ ]+)$")
 	id = tonumber(id)
 	if not id then
@@ -105,7 +103,7 @@ commands["m"] = function(args)
 end
 commands["move"] = commands["m"]
 
-commands["invalidate"] = function(args)
+commands["invalidate"] = function(ai, args)
 	local id = tonumber(args)
 	if not id then
 		print("Invalid id")
@@ -116,7 +114,7 @@ commands["invalidate"] = function(args)
 end
 commands["inv"] = commands["invalidate"]
 
-commands["adj"] = function(args)
+commands["adj"] = function(ai, args)
 	local r,c = parseCoord(args)
 	if not (r and c) then
 		print("Invalid coordinates")
@@ -134,7 +132,7 @@ commands["adj"] = function(args)
 	ai:getBoard():print(cgr, true)
 end
 
-commands["mdir"] = function(args)
+commands["mdir"] = function(ai, args)
 	local loc, dir = args:match("^([^ ]+) +([^ ]+)$")
 	if not loc then
 		print("Invalid arguments")
@@ -166,7 +164,7 @@ commands["mdir"] = function(args)
 	ai:getBoard():print(cgr)
 end
 
-commands["adjhop"] = function(args)
+commands["adjhop"] = function(ai, args)
 	local r,c = parseCoord(args)
 	if not (r and c) then
 		print("Invalid coordinates")
@@ -185,7 +183,7 @@ commands["adjhop"] = function(args)
 	ai:getBoard():print(cgr, true)
 end
 
-commands["path"] = function(args)
+commands["path"] = function(ai, args)
 	local loc1, loc2 = args:match("^([^ ]+) +([^ ]+)$")
 	if not loc1 then
 		print("Invalid coordinates")
@@ -216,13 +214,31 @@ commands["path"] = function(args)
 	end
 end
 
-commands["help"] = function(args)
+commands["help"] = function(ai, args)
 	for k,_ in pairs(commands) do
 		print(k)
 	end
 end
 
-do
+local function main(ai)
+	while true do
+		io.write("> ")
+		local cmdstr = io.read()
+		
+		local cmd, args = cmdstr:match("^([^ ]+) ?(.-)$")
+		--if processCmd(cmd, args) then break end
+		local cmdfunc = commands[cmd]
+		if cmdfunc then
+			if cmdfunc(ai, args) then
+				break
+			end
+		else
+			print("Unknown command")
+		end
+	end
+end
+
+if not (...) then
 	io.write("Number of Players: ")
 	local numplys = assert(tonumber(io.read()), "not a number")
 	assert(({[1]=true, [2]=true, [4]=true})[numplys], "invalid number of players")
@@ -246,21 +262,8 @@ do
 		end
 	end
 	
-	ai = AI:new(me, numwalls, playerlocs)
+	return main(AI:new(me, numwalls, playerlocs))
+else
+	return main
 end
 
-while true do
-	io.write("> ")
-	local cmdstr = io.read()
-	
-	local cmd, args = cmdstr:match("^([^ ]+) ?(.-)$")
-	--if processCmd(cmd, args) then break end
-	local cmdfunc = commands[cmd]
-	if cmdfunc then
-		if cmdfunc(args) then
-			break
-		end
-	else
-		print("Unknown command")
-	end
-end
