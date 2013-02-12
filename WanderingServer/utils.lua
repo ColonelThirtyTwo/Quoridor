@@ -4,6 +4,10 @@ local bit = require "bit"
 local floor = math.floor
 local abs = math.abs
 
+require "WTypes"
+
+math.randomseed(os.time())
+
 local Utils = {}
 
 function printTable(t, depth, tabs)
@@ -73,6 +77,37 @@ function Utils.arrayReverse(arr)
 	return arr
 end
 
+local defaultkey = function(a,b) return a < b end
+
+function Utils.arraySort(arr, bIndex, eIndex, cmp)
+	bIndex = bIndex or 1
+	eIndex = eIndex or #arr
+	cmp = cmp or defaultkey
+	
+	local mid
+	do
+		local rIndex = math.random(bIndex, eIndex)
+		arr[rIndex], arr[eIndex] = arr[eIndex], arr[rIndex]
+		local i, j = bIndex-1, bIndex
+		while j < eIndex do
+			if cmp(arr[j], arr[eIndex]) then
+				i = i + 1
+				arr[i], arr[j] = arr[j], arr[i]
+			end
+			j = j + 1
+		end
+		arr[i+1], arr[eIndex] = arr[eIndex], arr[i+1]
+		mid = i+1
+	end
+
+	if bIndex < mid then
+		Utils.arraySort(arr, bIndex, mid-1, cmp)
+	end
+	if mid < eIndex then
+		Utils.arraySort(arr, mid+1, eIndex, cmp)
+	end
+end
+
 -- ------------------------------------------------------------------------------------
 
 -- Trick for packing coordinates into Lua numbers, which can then be used in tables, etc.
@@ -129,7 +164,6 @@ end
 
 -- ------------------------------------------------------------------------------------
 
-require "WTypes"
 ffi.cdef[[
 typedef struct {
 	short x,y;

@@ -19,7 +19,7 @@ function GameTree:new(board, move)
 	}, self)
 end
 
-function GameTree:generate(plyid)
+function GameTree:generate(plyid, depth)
 	if self.generated then return end
 	
 	local p = self.board.players[plyid]
@@ -61,11 +61,12 @@ function GameTree:setScore(s)
 	self.score = s
 end
 
-local compare = function(a,b) return a.score < b.score end
+local compare = function(a,b) return a.score >= b.score end -- Greater than for descending sorted
 function GameTree:sort()
 	if self.sorted then return end
 	
-	table.sort(self, compare)
+	--table.sort(self, compare)
+	Utils.arraySort(self,nil,nil,compare)
 	self.sorted = true
 end
 

@@ -84,7 +84,7 @@ local function alphabeta(node, depth, maxid, a, b, plyid, finishby)
 	
 	local nextid = node.board:nextPly(plyid)
 	local bestmove, returnscore
-	node:generate(plyid)
+	node:generate(plyid, depth)
 	
 	if plyid == maxid then
 		for i=1,#node do

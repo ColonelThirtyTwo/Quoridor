@@ -30,10 +30,7 @@ local function readLine(socket)
 end
 
 local function write(socket, str)
-	local nchars, err = SocketUtils.WriteN(socket, str, #str)
-	if nchars ~= #str then
-		print("! Didn't write enough data into socket !")
-	end
+	SocketUtils.WriteN(socket, str, #str)
 end
 
 local function writeAck(socket)
