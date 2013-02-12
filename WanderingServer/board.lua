@@ -287,7 +287,7 @@ function Board:evaluate(plyid)
 	for i=1,#self.players do
 		local p = self.players[i]
 		if p.valid then
-			local s = #self:findPathToGoal(Coord(p.r,p.c), i)-1
+			local s = #assert(self:findPathToGoal(Coord(p.r,p.c), i))-1
 			if i == plyid then
 				myscore = -s
 			else

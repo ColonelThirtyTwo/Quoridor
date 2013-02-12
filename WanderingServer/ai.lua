@@ -5,6 +5,7 @@ AI.__index = AI
 local Board = require "board"
 local Player = require "player"
 local Utils = require "utils"
+local GameTree = require "gametree"
 local Coord, unCoord = Utils.Coord, Utils.unCoord
 
 function AI:new(myid, numwalls, playerlocations)
@@ -63,30 +64,33 @@ local function xpcall_hook(err)
 	end
 end
 
-local function alphabeta(board, depth, maxid, a, b, plyid, finishby)
+local function alphabeta(node, depth, maxid, a, b, plyid, finishby)
 	if getTime() > finishby then
 		error(OUT_OF_TIME, 0)
 	end
 	
-	local p = board:isTerminal()
+	local p = node.board:isTerminal()
 	if p then
-		if p.id == maxid then
-			return nil, 5000+depth
-		else
-			return nil, -5000-depth
-		end
+		local score = p.id == maxid and 5000+depth or -5000-depth
+		node:setScore(score)
+		return nil, score
 	end
 	
 	if depth <= 0 then
-		return nil, board:evaluate(maxid), depth
+		local score = node.board:evaluate(maxid), depth
+		node:setScore(score)
+		return nil, score
 	end
 	
-	local nextid = board:nextPly(plyid)
+	local nextid = node.board:nextPly(plyid)
+	local bestmove, returnscore
+	node:generate(plyid)
 	
 	if plyid == maxid then
-		local bestmove = nil
-		for move in board:nextMoves(plyid) do
-			local _, score = alphabeta(board:copy():applyMove(move), depth-1, maxid, a, b, nextid, finishby)
+		for i=1,#node do
+			local nextnode = node[i]
+			local move = nextnode.move
+			local _, score = alphabeta(nextnode, depth-1, maxid, a, b, nextid, finishby)
 			if score > a then
 				bestmove = move
 				a = score
@@ -95,11 +99,12 @@ local function alphabeta(board, depth, maxid, a, b, plyid, finishby)
 				break
 			end
 		end
-		return bestmove, a
+		returnscore = a
 	else
-		local bestmove = nil
-		for move in board:nextMoves(plyid) do
-			local _, score = alphabeta(board:copy():applyMove(move), depth-1, maxid, a, b, nextid, finishby)
+		for i=1,#node do
+			local nextnode = node[i]
+			local move = nextnode.move
+			local _, score = alphabeta(nextnode, depth-1, maxid, a, b, nextid, finishby)
 			if score < b then
 				bestmove = move
 				b = score
@@ -108,23 +113,28 @@ local function alphabeta(board, depth, maxid, a, b, plyid, finishby)
 				break
 			end
 		end
-		return bestmove, b
+		returnscore = b
 	end
+	
+	node:sort()
+	return bestmove, returnscore
 end
 
 function AI:getMove()
-	if self.currentboard:numActivePlayers() == 1 then
-		-- Nothing that complicated for a 1P game
-		local move, _ = alphabeta(self.currentboard, 1, self.me, -math.huge, math.huge, self.me, math.huge)
-		return move
-	end
+	
+	--if self.currentboard:numActivePlayers() == 1 then
+	--	-- Nothing that complicated for a 1P game
+	--	local move, _ = alphabeta(self.currentboard, 1, self.me, -math.huge, math.huge, self.me, math.huge)
+	--	return move
+	--end
 	
 	local start = getTime()
-	local finishby = start+1
+	local finishby = start+8
+	local tree = GameTree:new(self.currentboard)
 	local depth = 1
 	local bestmove = nil
 	while true do
-		local ok, move = xpcall(alphabeta, xpcall_hook, self.currentboard, depth, self.me, -math.huge, math.huge, self.me, finishby)
+		local ok, move = xpcall(alphabeta, xpcall_hook, tree, depth, self.me, -math.huge, math.huge, self.me, finishby)
 		-- alphabeta(board, depth, maxid, a, b, plyid, finishby)
 		if not ok then
 			if move == OUT_OF_TIME then
