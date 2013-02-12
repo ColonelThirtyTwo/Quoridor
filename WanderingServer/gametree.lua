@@ -61,7 +61,7 @@ function GameTree:setScore(s)
 	self.score = s
 end
 
-local compare = function(a,b) return a.score >= b.score end -- Greater than for descending sorted
+local compare = function(a,b) return a.score > b.score end -- Greater than for descending sorted
 function GameTree:sort()
 	if self.sorted then return end
 	

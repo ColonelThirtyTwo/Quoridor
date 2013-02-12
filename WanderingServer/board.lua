@@ -192,7 +192,8 @@ function Board:copy()
 	local b = setmetatable({},Board)
 	b.players = {}
 	for i=1,#self.players do b.players[i] = self.players[i]:copy() end
-	b.walls = Utils.arrayCopy(self.walls)
+	b.walls = {}
+	for i=1,#self.walls do b.walls[i] = self.walls[i] end
 	b.grid = ffi.new(grid, self.grid)
 	return b
 end
