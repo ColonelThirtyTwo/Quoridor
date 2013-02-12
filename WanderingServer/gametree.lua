@@ -2,62 +2,106 @@
 local GameTree = {}
 GameTree.__index = GameTree
 
+local Board = require "board"
 local Move = require "move"
 local Wall = require "wall"
 local Utils = require "utils"
 local Coord, unCoord = Utils.Coord, Utils.unCoord
 
 local tinsert = table.insert
+local ccreate = coroutine.create
+local cyield = coroutine.yield
+local cresume = coroutine.resume
 
-function GameTree:new(board, move)
-	return setmetatable({
-		board = board,
-		move = move,
-		score = -math.huge,
-		generated = false,
-		sorted = false,
-	}, self)
+local possible_walls = {}
+do
+	for c=1,Board.SIZE-1 do
+		for r=0,Board.SIZE-2 do
+			local w = Wall(-1, r, c, r+2, c)
+			if w:valid() then
+				tinsert(possible_walls, w)
+			end
+		end
+	end
+	for r=1,Board.SIZE-1 do
+		for c=0,Board.SIZE-2 do
+			local w = Wall(-1, r, c, r, c+2)
+			if w:valid() then
+				tinsert(possible_walls, w)
+			end
+		end
+	end
 end
 
-function GameTree:generate(plyid, depth)
-	if self.generated then return end
-	
+local function move_gen(self, plyid)
 	local p = self.board.players[plyid]
-	local t = self.board:getAdjHop(Coord(p.r, p.c))
-	for i=1,#t do
-		local move = Move(plyid, p.r, p.c, unCoord(t[i]))
-		tinsert(self, GameTree:new(self.board:copy():applyMove(move), move))
+	cyield()
+	
+	do
+		local t = self.board:getAdjHop(Coord(p.r, p.c))
+		for i=1,#t do
+			local move = Move(plyid, p.r, p.c, unCoord(t[i]))
+			move = GameTree:new(self.board:copy():applyMove(move), move)
+			cyield(move)
+		end
 	end
 	
 	if p.walls > 0 then
-		for c=1,self.board.SIZE-1 do
-			for r=0,self.board.SIZE-2 do
-				local w = Wall(plyid, r, c, r+2, c)
-				if self.board:checkWall(w) then
-					tinsert(self, GameTree:new(self.board:copy():applyMove(w), w))
-				end
-			end
-		end
-		for r=1,self.board.SIZE-1 do
-			for c=0,self.board.SIZE-2 do
-				local w = Wall(plyid, r, c, r, c+2)
-				if self.board:checkWall(w) then
-					tinsert(self, GameTree:new(self.board:copy():applyMove(w), w))
-				end
+		for i=1,#possible_walls do
+			if self.board:checkWall(possible_walls[i]) then
+				local w = possible_walls[i]:copy()
+				w.owner = plyid
+				w = GameTree:new(self.board:copy():applyMove(w), w)
+				cyield(w)
 			end
 		end
 	end
 	
 	if #self == 0 then
 		local move = Move(plyid, p.r, p.c, p.r, p.c)
-		tinsert(self, GameTree:new(self.board:copy():applyMove(move), move))
+		cyield(move)
 	end
 	
-	self.generated = true
+	while true do
+		cyield(nil)
+	end
+end
+
+function GameTree:new(board, move)
+	local t = setmetatable({
+		board = board,
+		move = move,
+		score = -math.huge,
+		sorted = false,
+	}, self)
+	return t
+end
+
+function GameTree:__index(k)
+	if type(k) == "number" then
+		assert(k >= 1)
+		assert(k == 1 or self[k-1])
+		local ok, node = cresume(self.generator)
+		if not ok then
+			error(debug.traceback(self.generator,node,0))
+		end
+		self[k] = node
+		return node
+	else
+		return GameTree[k]
+	end
+end
+
+function GameTree:initGenerator(plyid)
+	if self.generator then return end
+	self.generator = ccreate(move_gen)
+	local ok, err = cresume(self.generator, self, plyid)
+	if not ok then
+		error(debug.traceback(self.generator,err,0))
+	end
 end
 
 function GameTree:setScore(s)
-	if self.sorted then return end
 	self.score = s
 end
 

@@ -72,6 +72,10 @@ function Wall:intersects(other)
 	return false
 end
 
+function Wall:copy()
+	return ffi.new(Wall_typ, self)
+end
+
 function Wall:__tostring()
 	return string.format("Wall@(%d,%d)-(%d,%d)", self.r1,self.c1, self.r2,self.c2)
 end

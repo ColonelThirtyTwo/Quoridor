@@ -86,10 +86,11 @@ local function alphabeta(node, depth, maxid, a, b, plyid, finishby)
 	
 	local nextid = node.board:nextPly(plyid)
 	local bestmove, returnscore
-	node:generate(plyid, depth)
+	node:initGenerator(plyid)
 	
 	if plyid == maxid then
-		for i=1,#node do
+		local i = 1
+		while node[i] do
 			local nextnode = node[i]
 			local move = nextnode.move
 			local _, score = alphabeta(nextnode, depth-1, maxid, a, b, nextid, finishby)
@@ -100,10 +101,12 @@ local function alphabeta(node, depth, maxid, a, b, plyid, finishby)
 			if b <= a then
 				break
 			end
+			i=i+1
 		end
 		returnscore = a
 	else
-		for i=1,#node do
+		local i = 1
+		while node[i] do
 			local nextnode = node[i]
 			local move = nextnode.move
 			local _, score = alphabeta(nextnode, depth-1, maxid, a, b, nextid, finishby)
@@ -114,6 +117,7 @@ local function alphabeta(node, depth, maxid, a, b, plyid, finishby)
 			if b <= a then
 				break
 			end
+			i=i+1
 		end
 		returnscore = b
 	end
