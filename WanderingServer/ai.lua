@@ -120,7 +120,7 @@ function AI:getMove()
 	end
 	
 	local start = getTime()
-	local finishby = start+1
+	local finishby = start+8
 	local depth = 1
 	local bestmove = nil
 	while true do
