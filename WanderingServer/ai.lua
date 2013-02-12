@@ -7,7 +7,7 @@ local Player = require "player"
 local Utils = require "utils"
 local Coord, unCoord = Utils.Coord, Utils.unCoord
 
-local DEPTH_LIMIT = 25
+local DEPTH_LIMIT = 3
 
 function AI:new(myid, numwalls, playerlocations)
 	local ai = setmetatable({
