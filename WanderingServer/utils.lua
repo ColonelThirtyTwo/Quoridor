@@ -59,6 +59,13 @@ else
 	end
 end
 
+ffi.cdef[[
+int _kbhit( void );
+int _getch( void );
+]]
+
+function Utils.getch_nonblock() return ffi.C._kbhit() ~= 0 and string.char(ffi.C._getch()) or nil end
+
 -- ------------------------------------------------------------------------------------
 
 function Utils.arrayCopy(a1, a2)

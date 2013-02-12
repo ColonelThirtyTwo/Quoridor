@@ -41,7 +41,11 @@ class RemoteAI:
 			raise RemoteAI.error("Received a bad ACK: "+r)
 	
 	def connect(self, me, walls, locations):
-		self.socket = socket.create_connection((self.host,PORT))
+		try:
+			self.socket = socket.create_connection((self.host,PORT), timeout=9.5)
+		except socket.timeout:
+			return False
+		
 		#self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 		atexit.register(self.close)
 		self.me = me
@@ -54,6 +58,7 @@ class RemoteAI:
 				self._send("inv ")
 		self._send("\n")
 		self._recvAck()
+		return True
 	
 	def sendMove(self, move):
 		if move.move:

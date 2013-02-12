@@ -8,6 +8,8 @@ local GameTree = require "gametree"
 local Utils = require "utils"
 local Coord, unCoord = Utils.Coord, Utils.unCoord
 
+local DEPTH_LIMIT = 3
+
 function AI:new(myid, numwalls, playerlocations)
 	local ai = setmetatable({
 		me = myid,
@@ -138,11 +140,11 @@ function AI:getMove()
 	local tree = GameTree:new(self.currentboard)
 	local depth = 1
 	local bestmove = nil
-	while true do
+	while depth <= DEPTH_LIMIT do
 		local ok, move = xpcall(alphabeta, xpcall_hook, tree, depth, self.me, -math.huge, math.huge, self.me, finishby)
-		-- alphabeta(board, depth, maxid, a, b, plyid, finishby)
 		if not ok then
 			if move == OUT_OF_TIME then
+				io.write("\tMax time elapsed\n")
 				break
 			else
 				error(move,0)
@@ -152,10 +154,6 @@ function AI:getMove()
 		io.write("\tAlphabeta d=", depth, " finished in ", (getTime()-start), " seconds\n")
 		depth = depth + 1
 	end
-	io.write("\tMax time elapsed\n")
-	
-	--profi:stop()
-	
 	return bestmove
 end
 

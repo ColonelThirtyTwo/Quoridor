@@ -205,6 +205,11 @@ local function main(cl_socket)
 			print("Connection terminated due to protocol errors")
 			break
 		end
+		
+		if Utils.getch_nonblock() == "d" then
+			print("--- Debug mode ---")
+			require("main_cli")(ai)
+		end
 	end
 	ai:shutdown()
 	print(string.rep("-", 60))

@@ -118,12 +118,14 @@ class PlayerData:
 	Stores the AI state.
 	"""
 	
-	def __init__(self, playerId, numWalls, playerLocations):
+	def __init__(self, logger, playerId, numWalls, playerLocations):
 		"""
+		logger: The logger
 		playerId: my player ID (0-3)
 		numWalls: Number of walls we have
 		playerLocations: list of player coordinates
 		"""
+		self.logger = logger
 		
 		plys = [None]*len(playerLocations)
 		for i, loc in enumerate(playerLocations):
@@ -131,12 +133,19 @@ class PlayerData:
 				plys[i] = Player(i, loc, numWalls)
 		self.currentboard = Board(plys)
 		self.me = playerId
+		
+		self.remoteai = RemoteAI("col32-desktop.student.rit.edu")
+		if not self.remoteai.connect(playerId+1, numWalls, playerLocations):
+			self.logger.write("Unable to connect to AI server, using local AI")
+			self.remoteai = None
 	
 	def applyMove(self, move):
 		"""
 		Notifies the AI of a move
 		"""
 		self.currentboard.applyMove(move)
+		if self.remoteai:
+			self.remoteai.sendMove(move)
 	
 	#from profilehooks import profile
 	#@profile(immediate=True, sort="time", filename="profile.out")
@@ -146,6 +155,14 @@ class PlayerData:
 		"""
 		if self.currentboard.activeplayers == 1:
 			return getMoveToGoal(self.currentboard, self.me)
+		elif self.remoteai:
+			try:
+				return self.remoteai.getMove()
+			except Exception as err:
+				self.remoteai = None
+				self.logger.write(str(err))
+				self.logger.write("Falling back to local AI")
+				return getMoveToGoal(self.currentboard, self.me)
 		else:
 			if CHEAP_MIN_ON_4PLAYER and self.currentboard.activeplayers > 2:
 				depth = 4
@@ -165,3 +182,5 @@ class PlayerData:
 		Notifies the AI of an invalidated player.
 		"""
 		self.currentboard.invalidate(plyid)
+		if self.remoteai:
+			self.remoteai.sendInvalidate(plyid+1)
