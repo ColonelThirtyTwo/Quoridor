@@ -4,8 +4,8 @@ AI.__index = AI
 
 local Board = require "board"
 local Player = require "player"
-local Utils = require "utils"
 local GameTree = require "gametree"
+local Utils = require "utils"
 local Coord, unCoord = Utils.Coord, Utils.unCoord
 
 function AI:new(myid, numwalls, playerlocations)
@@ -77,7 +77,7 @@ local function alphabeta(node, depth, maxid, a, b, plyid, finishby)
 	end
 	
 	if depth <= 0 then
-		local score = node.board:evaluate(maxid), depth
+		local score = node.board:evaluate(maxid)
 		node:setScore(score)
 		return nil, score
 	end

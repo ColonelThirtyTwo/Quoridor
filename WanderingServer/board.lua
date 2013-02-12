@@ -296,57 +296,12 @@ function Board:evaluate(plyid)
 			end
 		end
 	end
-		
+	
 	if activeEnemies == 0 then
 		return myscore
 	else
 		return myscore + enemyscore / activeEnemies
 	end
-end
-
-local function boardNextMoves(self, plyid)
-	coroutine.yield()
-	
-	local canmove = false
-	local p = self.players[plyid]
-	local t = self:getAdjHop(Coord(p.r, p.c))
-	for i=1,#t do
-		canmove = true
-		coroutine.yield(Move(plyid, p.r, p.c, unCoord(t[i])))
-	end
-	
-	if p.walls > 0 then
-		for c=1,self.SIZE-1 do
-			for r=0,self.SIZE-2 do
-				local w = Wall(plyid, r, c, r+2, c)
-				if self:checkWall(w) then
-					canmove = true
-					coroutine.yield(w)
-				end
-			end
-		end
-		for r=1,self.SIZE-1 do
-			for c=0,self.SIZE-2 do
-				local w = Wall(plyid, r, c, r, c+2)
-				if self:checkWall(w) then
-					canmove = true
-					coroutine.yield(w)
-				end
-			end
-		end
-	end
-	
-	if not canmove then
-		coroutine.yield(Move(plyid, p.r, p.c, p.r, p.c))
-	end
-end
-
-function Board:nextMoves(plyid)
-	assert(plyid >= 1 and plyid <= #self.players, plyid)
-	--local c = coroutine.wrap(boardNextMoves)
-	local c = Utils.coroutineWrapDebug(boardNextMoves)
-	c(self, plyid)
-	return c
 end
 
 -- ------------------------------------------------------------------------------------
