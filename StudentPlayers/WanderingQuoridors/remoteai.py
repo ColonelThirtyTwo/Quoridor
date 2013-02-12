@@ -42,7 +42,7 @@ class RemoteAI:
 	
 	def connect(self, me, walls, locations):
 		try:
-			self.socket = socket.create_connection((self.host,PORT), timeout=5)
+			self.socket = socket.create_connection((self.host,PORT), timeout=9.5)
 		except socket.timeout:
 			return False
 		
