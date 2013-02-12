@@ -7,6 +7,8 @@ local Player = require "player"
 local Utils = require "utils"
 local Coord, unCoord = Utils.Coord, Utils.unCoord
 
+local DEPTH_LIMIT = 25
+
 function AI:new(myid, numwalls, playerlocations)
 	local ai = setmetatable({
 		me = myid,
@@ -120,14 +122,15 @@ function AI:getMove()
 	end
 	
 	local start = getTime()
-	local finishby = start+8
+	local finishby = start+9
 	local depth = 1
 	local bestmove = nil
-	while true do
+	while depth < DEPTH_LIMIT do
 		local ok, move = xpcall(alphabeta, xpcall_hook, self.currentboard, depth, self.me, -math.huge, math.huge, self.me, finishby)
 		-- alphabeta(board, depth, maxid, a, b, plyid, finishby)
 		if not ok then
 			if move == OUT_OF_TIME then
+				io.write("\tMax time elapsed\n")
 				break
 			else
 				error(move,0)
@@ -137,7 +140,6 @@ function AI:getMove()
 		io.write("\tAlphabeta d=", depth, " finished in ", (getTime()-start), " seconds\n")
 		depth = depth + 1
 	end
-	io.write("\tMax time elapsed\n")
 	return bestmove
 end
 
