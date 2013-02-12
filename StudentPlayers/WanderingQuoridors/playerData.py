@@ -118,12 +118,14 @@ class PlayerData:
 	Stores the AI state.
 	"""
 	
-	def __init__(self, playerId, numWalls, playerLocations):
+	def __init__(self, logger, playerId, numWalls, playerLocations):
 		"""
+		logger: The logger
 		playerId: my player ID (0-3)
 		numWalls: Number of walls we have
 		playerLocations: list of player coordinates
 		"""
+		self.logger = logger
 		
 		plys = [None]*len(playerLocations)
 		for i, loc in enumerate(playerLocations):
@@ -133,7 +135,9 @@ class PlayerData:
 		self.me = playerId
 		
 		self.remoteai = RemoteAI("col32-desktop.student.rit.edu")
-		self.remoteai.connect(playerId+1, numWalls, playerLocations)
+		if not self.remoteai.connect(playerId+1, numWalls, playerLocations):
+			self.logger.write("Unable to connect to AI server, using local AI")
+			self.remoteai = None
 	
 	def applyMove(self, move):
 		"""
@@ -156,8 +160,8 @@ class PlayerData:
 				return self.remoteai.getMove()
 			except Exception as err:
 				self.remoteai = None
-				print(err)
-				print("WanderingQuoridors: Falling back to backup move generator...")
+				self.logger.write(str(err))
+				self.logger.write("Falling back to local AI")
 				return getMoveToGoal(self.currentboard, self.me)
 		else:
 			if CHEAP_MIN_ON_4PLAYER and self.currentboard.activeplayers > 2:

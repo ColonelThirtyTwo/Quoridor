@@ -125,7 +125,7 @@ function AI:getMove()
 	local finishby = start+9
 	local depth = 1
 	local bestmove = nil
-	while depth < DEPTH_LIMIT do
+	while depth <= DEPTH_LIMIT do
 		local ok, move = xpcall(alphabeta, xpcall_hook, self.currentboard, depth, self.me, -math.huge, math.huge, self.me, finishby)
 		-- alphabeta(board, depth, maxid, a, b, plyid, finishby)
 		if not ok then

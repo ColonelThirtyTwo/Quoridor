@@ -38,10 +38,7 @@ def init(logger, playerId, numWalls, playerHomes):
             a PlayerData object containing all of this player module's data
     """
     
-    return PlayerData(playerId-1, numWalls, list(playerHomes))
-    #r = RemoteAI("localhost")
-    #r.connect(playerId, numWalls, playerHomes)
-    #return r
+    return PlayerData(logger, playerId-1, numWalls, list(playerHomes))
 
 def last_move(playerData, move):
     """
@@ -67,7 +64,6 @@ def last_move(playerData, move):
             this player module's updated (playerData) data structure
     """
     playerData.applyMove(move)
-    #playerData.sendMove(move)
     return playerData
 
 def get_neighbors(playerData, r, c):
@@ -91,7 +87,6 @@ def get_neighbors(playerData, r, c):
     """
     
     return [x for x in playerData.currentboard.board[r,c]]
-    #return playerData.getAdjacent(r,c)
 
 def get_shortest_path(playerData, r1, c1, r2, c2):
     """
@@ -153,5 +148,4 @@ def player_invalidated(playerData, playerId):
     """
     
     playerData.invalidate(playerId-1)
-    #playerData.sendInvalidate(playerId)
     return playerData
