@@ -8,6 +8,7 @@ Author: Joseph Moreyn (jbm6331@rit.edu)
 # Imports the player move class as well as the board size constant
 from Model.interface import PlayerMove, BOARD_DIM
 from .playerData import PlayerData, Wall
+from .remoteai import RemoteAI
 
 def init(logger, playerId, numWalls, playerHomes):
     """
@@ -37,7 +38,7 @@ def init(logger, playerId, numWalls, playerHomes):
             a PlayerData object containing all of this player module's data
     """
     
-    return PlayerData(playerId-1, numWalls, list(playerHomes))
+    return PlayerData(logger, playerId-1, numWalls, list(playerHomes))
 
 def last_move(playerData, move):
     """
@@ -111,6 +112,7 @@ def get_shortest_path(playerData, r1, c1, r2, c2):
     """
     
     return playerData.currentboard.findPathToLoc((r1,c1), (r2,c2)) or []
+    #return playerData.getPath(r1,c1,r2,c2)
 
 def move(playerData):
     """
