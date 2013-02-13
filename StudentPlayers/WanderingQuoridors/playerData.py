@@ -134,7 +134,7 @@ class PlayerData:
 		self.currentboard = Board(plys)
 		self.me = playerId
 		
-		self.remoteai = RemoteAI("col32-desktop.student.rit.edu")
+		self.remoteai = RemoteAI("localhost")
 		if not self.remoteai.connect(playerId+1, numWalls, playerLocations):
 			self.logger.write("Unable to connect to AI server, using local AI")
 			self.remoteai = None

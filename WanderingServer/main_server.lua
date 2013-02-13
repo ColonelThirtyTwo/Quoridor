@@ -64,6 +64,11 @@ local function processCmd(socket, ai, cmd, args)
 		
 		printBoard(ai:getBoard())
 		
+		if ai:getBoard():isTerminal() then
+			print("--- Game Over ---")
+			return true
+		end
+		
 	elseif cmd == "w" then
 		local id, r1,c1, r2,c2 = args:match("^(%d+) (%d+),(%d) (%d+),(%d)$")
 		if not id then
@@ -206,9 +211,13 @@ local function main(cl_socket)
 			break
 		end
 		
-		if Utils.getch_nonblock() == "d" then
+		local c = Utils.getch_nonblock()
+		if c == "d" then
 			print("--- Debug mode ---")
 			require("main_cli")(ai)
+		elseif c == "r" then
+			print("--- Resetting ---")
+			break
 		end
 	end
 	ai:shutdown()
