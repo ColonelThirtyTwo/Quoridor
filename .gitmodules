@@ -1,0 +1,3 @@
+[submodule "WanderingServer/windows"]
+	path = WanderingServer/windows
+	url = git://github.com/Wiladams/LJIT2Win32.git
