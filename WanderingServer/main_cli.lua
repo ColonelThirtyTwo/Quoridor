@@ -1,4 +1,6 @@
 
+-- CLI interface for the AI. Currently fairly incomplete.
+
 package.path = "./windows/?.lua;"..package.path
 
 local AI = require "ai"

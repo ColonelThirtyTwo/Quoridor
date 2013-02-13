@@ -1,4 +1,6 @@
 
+-- Represents a player
+
 local ffi = require "ffi"
 
 local Player = {}

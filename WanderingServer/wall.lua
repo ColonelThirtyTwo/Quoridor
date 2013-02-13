@@ -1,4 +1,6 @@
 
+-- Represents a wall
+
 local ffi = require "ffi"
 local Board = require "board"
 
@@ -13,10 +15,13 @@ function Wall:__new(owner, r1, c1, r2, c2)
 	return ffi.new(self, owner, r1,c1, r2,c2)
 end
 
+-- Returns true if the wall is horizontal. Otherwise, the wall is vertical (or invalid)
 function Wall:horizontal()
 	return self.r1 == self.r2
 end
 
+-- Returns true if the wall is a valid definition (coordinates in the right order, is either horizontal
+-- or vertical, etc). This doesn't check to see if a wall instersects with others, etc.
 function Wall:valid()
 	if self.r1 ~= self.r2 and self.c1 ~= self.c2 then
 		-- Not axis aligned
@@ -54,6 +59,7 @@ function Wall:valid()
 	return bordercoords <= 1
 end
 
+-- Returns if this wall intersects with another.
 function Wall:intersects(other)
 	assert(ffi.istype(Wall_typ, other))
 	mp1r, mp1c = (self.r1+self.r2)/2, (self.c1+self.c2)/2

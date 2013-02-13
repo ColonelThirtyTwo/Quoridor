@@ -2,8 +2,14 @@
 local ffi = require "ffi"
 local bit = require "bit"
 
+-- Board representation.
+-- The board contains a graph, represented by as a 2D array of bytes, with
+-- bits set indicating which direction movement is possible.
+-- This makes computing adjacent spaces somewhat complicated, but
+-- cloning the board is much easier.
+
 local Board = {}
-package.loaded[...] = Board
+package.loaded[...] = Board -- Solve some circular dependancy issues
 Board.__index = Board
 Board.SIZE = 9
 
@@ -64,6 +70,7 @@ local goal_atgoals = {
 
 -- ------------------------------------------------------------------------------------
 
+-- Creates a new board
 function Board:new(players)
 	local b = setmetatable({},self)
 	b.players = players
@@ -112,6 +119,7 @@ function Board:set(r,c,v)
 	self.grid[r][c] = v
 end
 
+-- Returns number of non-invalidated players
 function Board:numActivePlayers()
 	local c = 0
 	for i=1,#self.players do
@@ -122,6 +130,7 @@ function Board:numActivePlayers()
 	return c
 end
 
+-- Returns the i'th reachable neighbor from coord
 function Board:getNeighbor(coord, i)
 	local r,c = unCoord(coord)
 	local adj = bits2adj[self:get(r,c)]
@@ -130,6 +139,7 @@ function Board:getNeighbor(coord, i)
 	end
 end
 
+-- Returns the player at r,c
 function Board:getPlayerAt(r,c)
 	if not c then r,c = unCoord(r) end
 	for i=1,#self.players do
@@ -140,6 +150,8 @@ function Board:getPlayerAt(r,c)
 	end
 end
 
+-- From r,c, return the spot you would be in if you moved in the direction
+-- specified by the bits in dir, or nil if you can't move in that direction
 function Board:moveInDir(r,c,dir)
 	if not dir then
 		dir = c
@@ -152,6 +164,8 @@ function Board:moveInDir(r,c,dir)
 	end
 end
 
+-- Returns an array of adjacent locations, also computing moves where
+-- one player hops over the next.
 function Board:getAdjHop(loc1,c)
 	if c then loc1 = Coord(loc1, c) end
 	-- Hnng ugly
@@ -198,8 +212,12 @@ function Board:copy()
 	return b
 end
 
-local gridbuffer = grid()
+local gridbuffer = grid() -- Keep one of these around so we aren't allocating one every time
+
+-- Checks the wall and returns true if it can be placed in the board.
 function Board:checkWall(wall)
+	-- TODO: This needs optimization bad!
+	
 	if not wall:valid() then return false end
 	for i=1,#self.walls do
 		if wall:intersects(self.walls[i]) then
@@ -221,6 +239,7 @@ function Board:checkWall(wall)
 	return true
 end
 
+-- Returns the ID of the next non-invalid player.
 function Board:nextPly(plyid)
 	repeat
 		plyid = (plyid % #self.players) + 1
@@ -230,11 +249,14 @@ end
 
 -- ------------------------------------------------------------------------------------
 
+-- Updates a player's location
 function Board:updatePlayerLocation(plyid, r, c)
 	assert(r >= 0 and r < self.SIZE and c >= 0 and c < self.SIZE)
 	self.players[plyid].r, self.players[plyid].c = r, c
 end
 
+-- Adds a wall to the board.
+-- onlytoadjlist is used by checkWall and should not be used in external code
 function Board:addWall(wall, onlytoadjlist)
 	if wall:horizontal() then
 		self:set(wall.r1  , wall.c1  , bit.band(self:get(wall.r1  , wall.c1  ), bit.bnot(UP)) )
@@ -254,10 +276,14 @@ function Board:addWall(wall, onlytoadjlist)
 	end
 end
 
+-- Invalidates a player
 function Board:invalidate(plyid)
 	self.players[plyid].valid = false
 end
 
+-- Applies a Move or Wall object
+-- If m is a Move cdata, updates the player's location
+-- If m is a Wall cdata, adds the wall to the board
 function Board:applyMove(m)
 	if ffi.istype(Move, m) then
 		self:updatePlayerLocation(m.plyid, m.r, m.c)
@@ -271,6 +297,8 @@ end
 
 -- ------------------------------------------------------------------------------------
 
+-- If the current board configuration is one where a player is at its goal, returns the player
+-- at the goal. Else returns nil
 function Board:isTerminal()
 	for i=1,#self.players do
 		local p = self.players[i]
@@ -280,6 +308,8 @@ function Board:isTerminal()
 	end
 end
 
+-- Returns a heuristic value of how well the player specified by plyid
+-- is doing.
 function Board:evaluate(plyid)
 	local myscore = 0
 	local enemyscore = 0
@@ -307,6 +337,7 @@ end
 
 -- ------------------------------------------------------------------------------------
 
+-- Generic Breadth-first search algorithm
 function Board:_bfs(start, atgoal, canreach)
 	local queue = Queue:new()
 	queue:add(start)
@@ -340,15 +371,18 @@ function Board:_bfs(start, atgoal, canreach)
 	return nil
 end
 
+-- Finds a path from start to finish
 function Board:findPathToLoc(start, finish)
 	local atgoal = function(l) return l == finish end
 	return self:_bfs(start, atgoal)
 end
 
+-- Finds a path from start to plyid's goal
 function Board:findPathToGoal(start, plyid)
 	return self:_bfs(start, goal_atgoals[plyid])
 end
 
+-- Returns true if plyid can reach its goal
 function Board:canReachGoal(plyid)
 	local l = Coord(self.players[plyid].r, self.players[plyid].c)
 	return self:_bfs(l, goal_atgoals[plyid], true)
@@ -375,6 +409,9 @@ local bits2chars = {
 	[bit.bor(LEFT,RIGHT,UP,DOWN)] = string.char(206),
 }
 
+-- Prints out the board using cool high-ascii characters.
+-- colors is an optional 2D array of bits from Utils.textColors for each of the cells of the board
+-- noplayers, if set to true, will disable printing the players header.
 function Board:print(colors, noplayers)
 	if not noplayers then
 		for i=1,#self.players do

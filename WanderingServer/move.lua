@@ -1,4 +1,6 @@
 
+-- Represents a pawn move
+
 local ffi = require "ffi"
 
 local Move = {}

@@ -1,4 +1,7 @@
 
+-- Queue data structure
+-- See http://www.lua.org/pil/11.4.html
+
 local Queue = {}
 Queue.__index = Queue
 

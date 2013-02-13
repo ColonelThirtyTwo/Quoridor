@@ -1,4 +1,7 @@
 
+-- A tree class where each edge represents a move a player can make.
+-- The tree dynamically expands as it is used.
+
 local GameTree = {}
 GameTree.__index = GameTree
 
@@ -13,6 +16,7 @@ local ccreate = coroutine.create
 local cyield = coroutine.yield
 local cresume = coroutine.resume
 
+-- Table of all of the walls that can possibly be put into the board
 local possible_walls = {}
 do
 	for c=1,Board.SIZE-1 do
@@ -33,10 +37,12 @@ do
 	end
 end
 
+-- Coroutine function for generating moves
 local function move_gen(self, plyid)
 	local p = self.board.players[plyid]
-	cyield()
+	cyield() -- Yield once after getting our arguments
 	
+	-- Compute player pawn movements
 	do
 		local t = self.board:getAdjHop(Coord(p.r, p.c))
 		for i=1,#t do
@@ -46,6 +52,7 @@ local function move_gen(self, plyid)
 		end
 	end
 	
+	-- Compute wall moves
 	if p.walls > 0 then
 		for i=1,#possible_walls do
 			if self.board:checkWall(possible_walls[i]) then
@@ -57,16 +64,19 @@ local function move_gen(self, plyid)
 		end
 	end
 	
+	-- If we don't have any moves, create a pass move
 	if #self == 0 then
 		local move = Move(plyid, p.r, p.c, p.r, p.c)
 		cyield(move)
 	end
 	
+	-- Generate nils for infinity
 	while true do
 		cyield(nil)
 	end
 end
 
+-- Initializer
 function GameTree:new(board, move)
 	local t = setmetatable({
 		board = board,
@@ -77,6 +87,9 @@ function GameTree:new(board, move)
 	return t
 end
 
+-- Handles gtree[index], generating moves dynamically.
+-- This isn't called if gtree[index] exists, so we
+-- don't have to check for already-generated moves.
 function GameTree:__index(k)
 	if type(k) == "number" then
 		assert(k >= 1)
@@ -86,12 +99,15 @@ function GameTree:__index(k)
 			error(debug.traceback(self.generator,node,0))
 		end
 		self[k] = node
+		if node then self.sorted = false end
 		return node
 	else
 		return GameTree[k]
 	end
 end
 
+-- Initializes the move generator coroutine.
+-- This should be called before indexing the tree is done.
 function GameTree:initGenerator(plyid)
 	if self.generator then return end
 	self.generator = ccreate(move_gen)
@@ -101,11 +117,14 @@ function GameTree:initGenerator(plyid)
 	end
 end
 
+-- Sets this node's score. Used during sorting.
 function GameTree:setScore(s)
 	self.score = s
 end
 
 local compare = function(a,b) return a.score > b.score end -- Greater than for descending sorted
+
+-- Sorts the generated moves based on their score, so that Alpha-beta can cut off earlier.
 function GameTree:sort()
 	if self.sorted then return end
 	

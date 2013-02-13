@@ -8,8 +8,11 @@ require "WTypes"
 
 math.randomseed(os.time())
 
+-- Various utilities
+
 local Utils = {}
 
+-- Recursively prints out a table.
 function printTable(t, depth, tabs)
 	depth = depth or 3
 	if depth <= 0 then return end
@@ -25,6 +28,7 @@ function printTable(t, depth, tabs)
 	io.write(tstr,"}\n")
 end
 
+-- Like coroutine.wrap, but also gives a traceback on error
 function Utils.coroutineWrapDebug(f)
 	local r = coroutine.create(f)
 	return function(...)
@@ -36,6 +40,7 @@ function Utils.coroutineWrapDebug(f)
 	end
 end
 
+-- Since os.clock isn't compiled by LuaJIT, use our own.
 ffi.cdef[[
 ULONGLONG GetTickCount64();
 BOOL QueryPerformanceFrequency(int64_t *lpFrequency);
@@ -59,6 +64,8 @@ else
 	end
 end
 
+-- Function for checking if a key had been pressed in the console.
+-- Creating an input thread would be better, but Lua has no native support for threads.
 ffi.cdef[[
 int _kbhit( void );
 int _getch( void );
@@ -68,6 +75,7 @@ function Utils.getch_nonblock() return ffi.C._kbhit() ~= 0 and string.char(ffi.C
 
 -- ------------------------------------------------------------------------------------
 
+-- Copies a1 into a2 and returns a2. a2 defaults to a new table
 function Utils.arrayCopy(a1, a2)
 	a2 = a2 or {}
 	for i=1,#a1 do
@@ -76,6 +84,7 @@ function Utils.arrayCopy(a1, a2)
 	return a2
 end
 
+-- Reverses an array
 function Utils.arrayReverse(arr)
 	local l = #arr
 	for i=1,floor(l/2) do
@@ -86,6 +95,8 @@ end
 
 local defaultkey = function(a,b) return a < b end
 
+-- Sorts an array using Quicksort and comparator cmp
+-- (table.sort isn't compiled)
 function Utils.arraySort(arr, bIndex, eIndex, cmp)
 	bIndex = bIndex or 1
 	eIndex = eIndex or #arr
@@ -132,34 +143,6 @@ function Utils.addCoord(a, b)
 	return Coord(r1+r2, c1+c2)
 end
 
--- These work on negatives, but are more expensive
---[[
-function Utils.NegCoord(r,c)
-	return bit.bor(
-		r < 0 and bit.lshift(1, 8+8-1) or 0,
-		bit.lshift(bit.band(abs(r), 0x7F), 8),
-		c < 0 and bit.lshift(1, 8-1) or 0,
-		bit.band(abs(c), 0x7F)
-	)
-end
-function Utils.unNegCoord(d)
-	return bit.band(bit.rshift(d, 8), 0x7F) * (bit.band(bit.rshift(d,8+8-1),1) ~= 0 and -1 or 1),
-		bit.band(d, 0x7F) * (bit.band(bit.rshift(d,8-1),1) ~= 0 and -1 or 1)
-end
-]]
-
---[[
-function Utils.packLoc(r,c)
-	return bit.bor(bit.lshift(r, 0xF), c)
-end
-function Utils.unpackLoc(d)
-	return bit.rshift(d, 0xF), bit.band(d, 0xF)
-end
-function Utils.unpackLoc2Coord(d)
-	return Coord(Utils.unpackLoc(d))
-end
-]]
-
 function Utils.testCoord()
 	for i=0,9 do
 		for j=0,9 do
@@ -170,6 +153,8 @@ function Utils.testCoord()
 end
 
 -- ------------------------------------------------------------------------------------
+
+-- Pretty colors in the console
 
 ffi.cdef[[
 typedef struct {
@@ -194,6 +179,7 @@ int printf ( const char * format, ... );
 
 local colorbuf = ffi.new("CONSOLE_SCREEN_BUFFER_INFO")
 
+-- Table of text color bits
 Utils.textColors = {
 	blue = 1,
 	green = 2,
@@ -205,6 +191,7 @@ Utils.textColors = {
 	bg_intensity = 128,
 }
 
+-- Like io.write, but colors the text according to c
 function Utils.writeColored(str, c)
 	local h = ffi.C.GetStdHandle( 0xfffffff5)
 	ffi.C.GetConsoleScreenBufferInfo(h, colorbuf)
@@ -212,6 +199,8 @@ function Utils.writeColored(str, c)
 	ffi.C.printf(str)
 	ffi.C.SetConsoleTextAttribute(h, colorbuf.wAttributes)
 end
+
+-- Some utilities for Board:print
 
 local colorgrid = ffi.typeof("int[9][9]")
 Utils.ColorGrid = colorgrid

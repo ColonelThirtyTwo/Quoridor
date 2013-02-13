@@ -1,4 +1,6 @@
 
+--- AI main file
+
 local AI = {}
 AI.__index = AI
 
@@ -8,8 +10,10 @@ local GameTree = require "gametree"
 local Utils = require "utils"
 local Coord, unCoord = Utils.Coord, Utils.unCoord
 
+-- IDDFS depth limit
 local DEPTH_LIMIT = 3
 
+-- Initializer
 function AI:new(myid, numwalls, playerlocations)
 	local ai = setmetatable({
 		me = myid,
@@ -31,17 +35,20 @@ function AI:new(myid, numwalls, playerlocations)
 	return ai
 end
 
+-- Notifies the AI of a player's move
 function AI:notifyMove(plyid, r,c)
 	self.currentboard:updatePlayerLocation(plyid, r, c)
 	self.currentply = self.currentboard:nextPly(plyid)
 end
 
+-- Notifies the AI of a wall place
 function AI:notifyWall(wall)
 	assert(self.currentboard:checkWall(wall))
 	self.currentboard:addWall(wall)
 	self.currentply = self.currentboard:nextPly(wall.owner)
 end
 
+-- Notifies the AI of a player invalidation
 function AI:notifyInvalidate(plyid)
 	self.currentboard:invalidate(plyid)
 	if plyid == self.currentply then
@@ -49,6 +56,7 @@ function AI:notifyInvalidate(plyid)
 	end
 end
 
+-- Gets the current board
 function AI:getBoard()
 	return self.currentboard
 end
@@ -58,6 +66,7 @@ end
 local getTime = Utils.getTime
 local OUT_OF_TIME = {}
 
+-- Hook for xpcall, to add a traceback if there is a real error.
 local function xpcall_hook(err)
 	if err ~= OUT_OF_TIME then
 		return debug.traceback(err,2)
@@ -66,6 +75,9 @@ local function xpcall_hook(err)
 	end
 end
 
+-- Recursive minimax function with alpha-beta pruning
+-- Will throw a OUT_OF_TIME error if the current time exceeds the
+-- time specified by the finishby argument.
 local function alphabeta(node, depth, maxid, a, b, plyid, finishby)
 	if getTime() > finishby then
 		error(OUT_OF_TIME, 0)
@@ -126,21 +138,10 @@ local function alphabeta(node, depth, maxid, a, b, plyid, finishby)
 	return bestmove, returnscore
 end
 
---local profi = require "ProFi"
---profi:setGetTimeMethod(Utils.getTime)
-
+-- Gets the move that the AI controlled player should make
 function AI:getMove()
-	
-	--if self.currentboard:numActivePlayers() == 1 then
-	--	-- Nothing that complicated for a 1P game
-	--	local move, _ = alphabeta(self.currentboard, 1, self.me, -math.huge, math.huge, self.me, math.huge)
-	--	return move
-	--end
-	
-	--profi:start()
-	
 	local start = getTime()
-	local finishby = start+8
+	local finishby = start+8 -- 8 seconds to compute move + 2 seconds in case of network latency
 	local tree = GameTree:new(self.currentboard)
 	local depth = 1
 	local bestmove = nil
@@ -148,9 +149,11 @@ function AI:getMove()
 		local ok, move = xpcall(alphabeta, xpcall_hook, tree, depth, self.me, -math.huge, math.huge, self.me, finishby)
 		if not ok then
 			if move == OUT_OF_TIME then
+				-- Ran out of time
 				io.write("\tMax time elapsed\n")
 				break
 			else
+				-- A real error
 				error(move,0)
 			end
 		end
@@ -161,12 +164,13 @@ function AI:getMove()
 	return bestmove
 end
 
+-- Shuts down the AI
 function AI:shutdown()
-	--profi:writeReport("profile.txt")
 end
 
 -- ------------------------------------------------------------------------------------
 
+-- Part 1: Gets an array of neighbors
 function AI:getNeighbors(r,c)
 	local t = {}
 	for i=1,4 do
@@ -177,6 +181,7 @@ function AI:getNeighbors(r,c)
 	return t
 end
 
+-- Part 1: Gets a path from r1,c1 to r2,c2
 function AI:getPath(r1,c1,r2,c2)
 	return self.currentboard:findPathToLoc(Coord(r1,c1), Coord(r2,c2))
 end
