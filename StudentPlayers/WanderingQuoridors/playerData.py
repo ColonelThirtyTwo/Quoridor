@@ -164,12 +164,8 @@ class PlayerData:
 				self.logger.write("Falling back to local AI")
 				return getMoveToGoal(self.currentboard, self.me)
 		else:
-			if CHEAP_MIN_ON_4PLAYER and self.currentboard.activeplayers > 2:
-				depth = 4
-				cheapmin = True
-			else:
-				depth = 2
-				cheapmin = False
+			depth = 1
+			cheapmin = False
 			bestmove, _ = alphabeta(self.currentboard, depth, self.me, cheapmin=cheapmin)
 			if bestmove:
 				return bestmove
